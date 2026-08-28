@@ -1,0 +1,36 @@
+{
+  "name": "kiki-rzp-proj",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts src/features/**/*.test.mjs && NODE_OPTIONS=--conditions=react-server tsx --test src/features/risk/timesfm-adapter.test.ts",
+    "eval:batch": "tsx scripts/evaluate-batch.ts",
+    "eval:forecast": "NODE_OPTIONS=--conditions=react-server tsx scripts/evaluate-forecast.ts",
+    "test:timesfm": "PYTHONPATH=services/timesfm python3 -m unittest discover -s services/timesfm/tests",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:timesfm && pnpm build"
+  },
+  "dependencies": {
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@next/env": "16.3.4",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.13",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@10.20.0"
+}
