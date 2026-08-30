@@ -1,0 +1,12 @@
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+python-multipart==0.0.32
+numpy==2.5.2
+ctranslate2==4.8.2
+faster-whisper==1.2.1
+onnxruntime==1.29.0
+kokoro-onnx==0.6.1
+misaki==0.7.4
+num2words==0.5.14
+spacy==3.8.16
+soxr==1.1.0

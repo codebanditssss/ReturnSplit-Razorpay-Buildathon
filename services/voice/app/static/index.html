@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Private speech-to-text and text-to-speech playground with low-latency streaming.">
+  <title>Voice Lab — Private speech intelligence</title>
+  <style>
+    :root {
+      --bg: #08090b;
+      --surface: #111318;
+      --surface-2: #171a20;
+      --surface-3: #0c0e12;
+      --text: #f7f7f2;
+      --muted: #989ca7;
+      --dim: #666b76;
+      --line: rgba(255, 255, 255, .09);
+      --line-strong: rgba(255, 255, 255, .16);
+      --accent: #b6ff62;
+      --accent-soft: rgba(182, 255, 98, .1);
+      --danger: #ff6f7d;
+      --warning: #ffc46b;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      font: 15px/1.5 Inter, "SF Pro Text", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background:
+        radial-gradient(ellipse 55% 32% at 50% -8%, rgba(182, 255, 98, .12), transparent),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, 48px 48px, 48px 48px, auto;
+    }
+    ::selection { color: #090b08; background: var(--accent); }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; }
+    .shell { width: min(980px, calc(100% - 32px)); margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 70px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 760; letter-spacing: -.025em; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      color: #0c1008;
+      background: var(--accent);
+      box-shadow: 0 0 30px rgba(182,255,98,.22);
+      font-size: 13px;
+    }
+    .header-right { display: flex; align-items: center; gap: 20px; }
+    .docs-link { color: var(--muted); text-decoration: none; font-size: 13px; }
+    .docs-link:hover { color: var(--text); }
+    .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--warning);
+      box-shadow: 0 0 0 4px rgba(255,196,107,.1);
+    }
+    .dot.ready { background: var(--accent); box-shadow: 0 0 0 4px rgba(182,255,98,.1); }
+
+    .hero { padding: 54px 4px 32px; text-align: center; }
+    .eyebrow {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 760;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 10px 0 12px;
+      font-size: clamp(40px, 7vw, 68px);
+      line-height: 1;
+      letter-spacing: -.06em;
+      font-weight: 730;
+    }
+    .hero p { max-width: 560px; margin: 0 auto; color: var(--muted); font-size: 16px; }
+
+    .workspace {
+      overflow: hidden;
+      margin-bottom: 24px;
+      border: 1px solid var(--line-strong);
+      border-radius: 28px;
+      background: rgba(17, 19, 24, .96);
+      box-shadow: 0 34px 100px rgba(0,0,0,.42);
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.015);
+    }
+    .tab {
+      min-height: 44px;
+      border: 0;
+      border-radius: 12px;
+      padding: 0 14px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-weight: 680;
+      transition: color .18s ease, background .18s ease, transform .18s ease;
+    }
+    .tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+    .tab.active { color: #0a0d08; background: var(--accent); }
+    .view { display: none; min-height: 510px; padding: clamp(24px, 5vw, 46px); }
+    .view.active { display: block; animation: reveal .2s ease-out; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(4px); } }
+
+    .tool-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 28px;
+    }
+    h2 { margin: 0 0 5px; font-size: 26px; line-height: 1.2; letter-spacing: -.035em; }
+    .tool-head p { max-width: 520px; margin: 0; color: var(--muted); }
+    .micro-label { color: var(--dim); font-size: 11px; font-weight: 720; letter-spacing: .09em; text-transform: uppercase; }
+    .control-strip {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .control-strip.tts-controls { grid-template-columns: 1.4fr 1fr; }
+    .field { min-width: 0; }
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 720;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    select, textarea {
+      width: 100%;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      outline: none;
+      background: var(--surface-3);
+    }
+    select { height: 46px; padding: 0 39px 0 13px; }
+    textarea {
+      min-height: 230px;
+      padding: 20px;
+      resize: vertical;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+    select:focus, textarea:focus {
+      border-color: rgba(182,255,98,.55);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .slider-shell {
+      display: flex;
+      align-items: center;
+      height: 46px;
+      gap: 12px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--surface-3);
+    }
+    input[type="range"] { min-width: 0; flex: 1; accent-color: var(--accent); }
+    .value { min-width: 43px; color: var(--accent); font-variant-numeric: tabular-nums; font-size: 13px; }
+
+    .stage {
+      min-height: 248px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 19px;
+      background: var(--surface-3);
+    }
+    .meter { display: flex; align-items: center; justify-content: center; gap: 3px; height: 50px; margin-bottom: 10px; }
+    .meter i {
+      width: 3px;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--accent);
+      opacity: .72;
+      transition: height .08s ease;
+    }
+    .transcript {
+      min-height: 142px;
+      color: var(--text);
+      font-size: clamp(18px, 2.5vw, 23px);
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .transcript.empty { display: grid; place-items: center; color: var(--muted); text-align: center; }
+    .transcript.no-speech {
+      color: var(--warning);
+      font-size: 17px;
+      border-left: 2px solid var(--warning);
+      padding-left: 16px;
+    }
+    .transcript .pending { color: var(--muted); }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border: 1px solid var(--line-strong);
+      border-radius: 13px;
+      padding: 0 18px;
+      color: var(--text);
+      background: var(--surface-2);
+      cursor: pointer;
+      font-weight: 720;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .button:hover:not(:disabled) { border-color: rgba(255,255,255,.3); transform: translateY(-1px); }
+    .button.primary { color: #0b0e08; border-color: var(--accent); background: var(--accent); }
+    .button.danger { border-color: rgba(255,111,125,.3); background: rgba(255,111,125,.1); }
+    .button:disabled { cursor: not-allowed; opacity: .42; transform: none; }
+    .button.loading::before {
+      content: "";
+      width: 13px;
+      height: 13px;
+      margin-right: 8px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .timer { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+    .result-meta { display: flex; flex-wrap: wrap; gap: 7px; min-height: 27px; margin-top: 13px; }
+    .pill { padding: 4px 9px; border: 1px solid var(--line); border-radius: 99px; color: var(--muted); font-size: 11px; }
+    .subline { margin-top: 12px; color: var(--dim); font-size: 12px; }
+
+    .drop {
+      display: grid;
+      place-items: center;
+      min-height: 220px;
+      padding: 30px;
+      border: 1px dashed rgba(255,255,255,.22);
+      border-radius: 19px;
+      text-align: center;
+      background: var(--surface-3);
+      cursor: pointer;
+      outline: none;
+      transition: border-color .18s ease, background .18s ease, transform .18s ease;
+    }
+    .drop:hover, .drop:focus-visible, .drop.drag {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+    .drop-icon {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 14px;
+      border-radius: 15px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 22px;
+    }
+    .drop strong { display: block; margin-bottom: 5px; font-size: 18px; }
+    .drop span { color: var(--muted); }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .file-progress {
+      margin-top: 18px;
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface-3);
+    }
+    .progress-copy { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: var(--muted); font-size: 12px; }
+    .progress-track { overflow: hidden; height: 4px; border-radius: 99px; background: rgba(255,255,255,.08); }
+    .progress-bar { width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width .2s ease; }
+    .progress-bar.indeterminate { width: 36%; animation: progress 1.1s ease-in-out infinite; }
+    @keyframes progress { from { transform: translateX(-110%); } to { transform: translateX(310%); } }
+    .file-result { display: none; margin-top: 20px; }
+    .file-result.show { display: block; animation: reveal .2s ease-out; }
+    .file-result .stage { min-height: 170px; }
+    .script-wrap { position: relative; }
+    .character-count { position: absolute; right: 14px; bottom: 11px; color: var(--muted); font-size: 11px; pointer-events: none; }
+    audio { width: 100%; margin-top: 18px; filter: invert(.88) hue-rotate(55deg); }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 4px 34px;
+      color: var(--dim);
+      font-size: 12px;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 10;
+      max-width: min(380px, calc(100vw - 40px));
+      padding: 13px 16px;
+      border: 1px solid var(--line-strong);
+      border-radius: 13px;
+      background: #202329;
+      box-shadow: 0 18px 50px #0009;
+      transform: translateY(90px);
+      opacity: 0;
+      transition: .25s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 20px, 980px); }
+      .docs-link { display: none; }
+      .hero { padding: 38px 8px 25px; }
+      h1 { font-size: 44px; }
+      .tabs { gap: 3px; padding: 6px; }
+      .tab { padding: 0 7px; font-size: 13px; }
+      .view { min-height: 0; padding: 25px 18px 28px; }
+      .tool-head { margin-bottom: 22px; }
+      .control-strip, .control-strip.tts-controls { grid-template-columns: 1fr; }
+      .stage { padding: 17px; }
+      textarea { min-height: 200px; }
+      .actions .button { flex: 1; }
+      .timer { width: 100%; margin: 2px 0 0; text-align: center; }
+      footer { flex-direction: column; align-items: center; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand"><span class="brand-mark">V</span> Voice Lab</div>
+      <div class="header-right">
+        <a class="docs-link" href="/docs">API docs</a>
+        <div class="status"><i class="dot" id="healthDot"></i><span id="healthText">Warming up…</span></div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Private speech studio</div>
+      <h1>Voice, without the wait.</h1>
+      <p>Transcribe recordings, capture speech live, or create natural audio—entirely on your dedicated server.</p>
+    </section>
+
+    <main class="workspace">
+      <nav class="tabs" aria-label="Voice tools" role="tablist">
+        <button class="tab active" data-view="live" role="tab" aria-controls="view-live" aria-selected="true">Live</button>
+        <button class="tab" data-view="file" role="tab" aria-controls="view-file" aria-selected="false">Transcribe file</button>
+        <button class="tab" data-view="tts" role="tab" aria-controls="view-tts" aria-selected="false">Generate voice</button>
+      </nav>
+
+      <section class="view active" id="view-live">
+        <div class="tool-head">
+          <div>
+            <h2>Live transcription</h2>
+            <p>Speak normally. Words settle as you talk, then a final pass cleans up the transcript.</p>
+          </div>
+          <span class="micro-label">WebSocket · low latency</span>
+        </div>
+        <div class="control-strip">
+          <div class="field">
+            <label for="liveLanguage">Language</label>
+            <select id="liveLanguage">
+              <option value="">Auto-detect</option>
+              <option value="en" selected>English</option>
+              <option value="hi">Hindi</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="ja">Japanese</option>
+              <option value="zh">Chinese</option>
+              <option value="pt">Portuguese</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="liveQuality">Final quality</label>
+            <select id="liveQuality">
+              <option value="realtime" selected>Fast</option>
+              <option value="accurate">Studio accuracy</option>
+            </select>
+          </div>
+        </div>
+        <div class="stage">
+          <div class="meter" id="meter" aria-hidden="true"></div>
+          <div class="transcript empty" id="liveTranscript" aria-live="polite">Your words will appear here.</div>
+        </div>
+        <div class="result-meta" id="liveMeta"></div>
+        <div class="actions">
+          <button class="button primary" id="startMic">Start listening</button>
+          <button class="button danger" id="stopMic" disabled>Stop &amp; finalize</button>
+          <span id="recordTimer" class="timer">00:00</span>
+        </div>
+        <div class="subline" id="captureSpec">Native PCM · server-side HQ resampling</div>
+      </section>
+
+      <section class="view" id="view-file">
+        <div class="tool-head">
+          <div>
+            <h2>Transcribe a recording</h2>
+            <p>Drop in an audio file and get a clean transcript with clear processing status.</p>
+          </div>
+          <span class="micro-label">100 MB max</span>
+        </div>
+        <div class="control-strip">
+          <div class="field">
+            <label for="fileLanguage">Language</label>
+            <select id="fileLanguage">
+              <option value="">Auto-detect</option>
+              <option value="en" selected>English</option>
+              <option value="hi">Hindi</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="ja">Japanese</option>
+              <option value="zh">Chinese</option>
+              <option value="pt">Portuguese</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fileQuality">Quality</label>
+            <select id="fileQuality">
+              <option value="realtime" selected>Fast</option>
+              <option value="accurate">Studio accuracy</option>
+            </select>
+          </div>
+        </div>
+        <div class="drop" id="dropZone" role="button" tabindex="0" aria-controls="audioFile">
+          <div>
+            <span class="drop-icon">↑</span>
+            <strong id="fileName">Choose an audio file</strong>
+            <span id="fileDetail">or drag it here · MP3, WAV, M4A, FLAC, OGG, WebM</span>
+          </div>
+        </div>
+        <input class="visually-hidden" id="audioFile" type="file" accept="audio/*,.m4a,.mp3,.wav,.flac,.ogg,.webm">
+        <div class="actions">
+          <button class="button primary" id="transcribeFile" disabled>Transcribe</button>
+        </div>
+        <div class="file-progress" id="fileProgress" hidden>
+          <div class="progress-copy"><span id="fileProgressText" role="status">Uploading…</span><span id="fileElapsed">0s</span></div>
+          <div class="progress-track"><div class="progress-bar" id="fileProgressBar"></div></div>
+        </div>
+        <div class="file-result" id="fileResult">
+          <div class="stage"><div class="transcript" id="fileTranscript" aria-live="polite"></div></div>
+          <div class="result-meta" id="fileMeta"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-tts">
+        <div class="tool-head">
+          <div>
+            <h2>Generate a voice</h2>
+            <p>Natural 24 kHz speech starts playing as soon as the first phrase is ready.</p>
+          </div>
+          <span class="micro-label">Kokoro · streaming</span>
+        </div>
+        <div class="control-strip tts-controls">
+          <div class="field">
+            <label for="voice">Voice</label>
+            <select id="voice"><option>Loading voices…</option></select>
+          </div>
+          <div class="field">
+            <label for="speed">Speed</label>
+            <div class="slider-shell">
+              <input id="speed" type="range" min="0.5" max="2" step="0.05" value="1">
+              <span class="value" id="speedValue">1.00×</span>
+            </div>
+          </div>
+        </div>
+        <label for="ttsText">Script</label>
+        <div class="script-wrap">
+          <textarea id="ttsText" maxlength="5000">Welcome to Voice Lab. This speech starts fast, sounds natural, and stays private.</textarea>
+          <span class="character-count" id="characterCount">0 / 5,000</span>
+        </div>
+        <audio id="ttsAudio" controls hidden></audio>
+        <div class="result-meta" id="ttsMeta"></div>
+        <div class="actions">
+          <button class="button primary" id="speak">Play voice</button>
+          <button class="button" id="download">Download WAV</button>
+        </div>
+      </section>
+    </main>
+
+    <footer><span>Private inference on your dedicated Box</span><span><a href="/docs">API docs</a> · <a href="/openapi.json">OpenAPI schema</a></span></footer>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const meter = $('meter');
+    for (let i = 0; i < 64; i++) meter.append(document.createElement('i'));
+
+    let toastTimer;
+    function notify(message) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+    function pills(element, values) {
+      element.replaceChildren();
+      values.filter(Boolean).forEach(value => {
+        const pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.textContent = value;
+        element.append(pill);
+      });
+    }
+    function wsUrl(path) {
+      return `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${path}`;
+    }
+    async function responseError(response, fallback) {
+      const text = await response.text();
+      if (!text) return fallback;
+      try {
+        const payload = JSON.parse(text);
+        return payload.detail || payload.error || fallback;
+      } catch {
+        return text.length < 240 ? text : fallback;
+      }
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(item => {
+        const active = item === tab;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-selected', String(active));
+      });
+      document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === `view-${tab.dataset.view}`));
+    }));
+
+    async function checkHealth() {
+      try {
+        const response = await fetch('/healthz', {cache: 'no-store'});
+        const data = await response.json();
+        if (!response.ok || !data.ready) throw new Error('Models are warming');
+        $('healthDot').classList.add('ready');
+        $('healthText').textContent = 'Models ready';
+      } catch (error) {
+        $('healthText').textContent = error.message || 'Service unavailable';
+        setTimeout(checkHealth, 4000);
+      }
+    }
+    checkHealth();
+
+    async function loadVoices() {
+      try {
+        const response = await fetch('/v1/voices');
+        const payload = await response.json();
+        const groups = new Map();
+        payload.data.forEach(voice => {
+          if (!groups.has(voice.language)) groups.set(voice.language, []);
+          groups.get(voice.language).push(voice);
+        });
+        $('voice').innerHTML = '';
+        groups.forEach((voices, language) => {
+          const group = document.createElement('optgroup');
+          group.label = language;
+          voices.forEach(voice => {
+            const option = document.createElement('option');
+            option.value = voice.id;
+            option.textContent = `${voice.name} · ${voice.gender}${voice.recommended ? ' ★' : ''}`;
+            option.selected = voice.id === payload.default;
+            group.append(option);
+          });
+          $('voice').append(group);
+        });
+      } catch { notify('Could not load the voice list'); }
+    }
+    loadVoices();
+
+    $('speed').addEventListener('input', event => $('speedValue').textContent = `${Number(event.target.value).toFixed(2)}×`);
+    function updateCharacterCount() {
+      $('characterCount').textContent = `${$('ttsText').value.length.toLocaleString()} / 5,000`;
+    }
+    $('ttsText').addEventListener('input', updateCharacterCount);
+    updateCharacterCount();
+
+    let ttsContext;
+    let ttsSocket;
+    let ttsNextTime = 0;
+    let ttsChunks = 0;
+    let ttsSources = [];
+    async function resetTtsAudio() {
+      if (ttsSocket) { try { ttsSocket.close(); } catch {} }
+      ttsSources.forEach(source => { try { source.stop(); source.disconnect(); } catch {} });
+      ttsSources = [];
+      if (!ttsContext || ttsContext.state === 'closed') {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error('Web Audio is not supported by this browser');
+        ttsContext = new AudioContextClass({latencyHint: 'interactive'});
+      }
+      if (ttsContext.state === 'suspended') await ttsContext.resume();
+      ttsNextTime = ttsContext.currentTime + .035;
+      ttsChunks = 0;
+    }
+    function playPcmChunk(arrayBuffer) {
+      const pcm = new Int16Array(arrayBuffer);
+      const buffer = ttsContext.createBuffer(1, pcm.length, 24000);
+      const channel = buffer.getChannelData(0);
+      for (let i = 0; i < pcm.length; i++) channel[i] = pcm[i] / 32768;
+      const source = ttsContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ttsContext.destination);
+      ttsSources.push(source);
+      source.onended = () => { ttsSources = ttsSources.filter(item => item !== source); };
+      const start = Math.max(ttsContext.currentTime + .012, ttsNextTime);
+      source.start(start);
+      ttsNextTime = start + buffer.duration;
+      ttsChunks++;
+    }
+
+    $('speak').addEventListener('click', async () => {
+      const text = $('ttsText').value.trim();
+      if (!text) return notify('Add some text first');
+      $('speak').disabled = true;
+      $('speak').textContent = 'Connecting…';
+      pills($('ttsMeta'), ['Opening WebSocket']);
+      try { await resetTtsAudio(); }
+      catch (error) {
+        notify(error.message || 'Audio playback could not start');
+        $('speak').disabled = false; $('speak').textContent = 'Play voice';
+        return;
+      }
+      ttsSocket = new WebSocket(wsUrl('/v1/tts/ws'));
+      ttsSocket.binaryType = 'arraybuffer';
+      ttsSocket.onmessage = event => {
+        if (event.data instanceof ArrayBuffer) return playPcmChunk(event.data);
+        let message;
+        try { message = JSON.parse(event.data); }
+        catch {
+          notify('The speech server returned an invalid message');
+          $('speak').disabled = false; $('speak').textContent = 'Play voice';
+          return;
+        }
+        if (message.type === 'ready') {
+          ttsSocket.send(JSON.stringify({
+            type: 'speak', input: text, voice: $('voice').value,
+            speed: Number($('speed').value), response_format: 'pcm'
+          }));
+          $('speak').textContent = 'Generating…';
+        } else if (message.type === 'start') {
+          pills($('ttsMeta'), [`Voice · ${message.voice}`, `Language · ${message.language}`, `Frontend · ${message.frontend}`, 'Streaming']);
+        } else if (message.type === 'done') {
+          pills($('ttsMeta'), [`${message.audioSeconds}s audio`, `${message.timeToFirstAudioMs}ms first audio`, `${message.processingMs}ms total`, `${ttsChunks} chunk${ttsChunks === 1 ? '' : 's'}`]);
+          $('speak').disabled = false;
+          $('speak').textContent = 'Play voice';
+          ttsSocket.close();
+        } else if (message.type === 'error') {
+          notify(message.error); $('speak').disabled = false; $('speak').textContent = 'Play voice';
+        }
+      };
+      ttsSocket.onerror = () => { notify('TTS WebSocket could not connect'); $('speak').disabled = false; $('speak').textContent = 'Play voice'; };
+    });
+
+    $('download').addEventListener('click', async () => {
+      const text = $('ttsText').value.trim();
+      if (!text) return notify('Add some text first');
+      $('download').disabled = true;
+      $('download').textContent = 'Generating…';
+      try {
+        const response = await fetch('/v1/tts', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({text, voice: $('voice').value, speed: Number($('speed').value), response_format: 'wav'})
+        });
+        if (!response.ok) throw new Error(await responseError(response, 'Generation failed'));
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        $('ttsAudio').src = url;
+        $('ttsAudio').hidden = false;
+        const link = document.createElement('a');
+        link.href = url; link.download = 'voice-lab.wav'; link.click();
+        pills($('ttsMeta'), [`${response.headers.get('x-audio-duration')}s audio`, `${response.headers.get('x-processing-ms')}ms generated`, 'WAV downloaded']);
+      } catch (error) { notify(error.message); }
+      finally { $('download').disabled = false; $('download').textContent = 'Download WAV'; }
+    });
+
+    const fileInput = $('audioFile');
+    const dropZone = $('dropZone');
+    const maxFileBytes = 100 * 1024 * 1024;
+    let selectedFile = null;
+    let fileTimer;
+    let fileBusy = false;
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      return `${(bytes / 1048576).toFixed(1)} MB`;
+    }
+    function selectFile(file) {
+      if (!file) return;
+      if (fileBusy) return notify('Wait for the current transcription to finish');
+      if (!file.size) {
+        selectedFile = null;
+        $('transcribeFile').disabled = true;
+        return notify('That file is empty');
+      }
+      if (file.size > maxFileBytes) {
+        selectedFile = null;
+        fileInput.value = '';
+        $('transcribeFile').disabled = true;
+        return notify('Choose a file smaller than 100 MB');
+      }
+      selectedFile = file;
+      $('fileName').textContent = file.name;
+      $('fileDetail').textContent = `${formatFileSize(file.size)} · ready to transcribe`;
+      $('fileResult').classList.remove('show');
+      $('fileTranscript').classList.remove('no-speech');
+      pills($('fileMeta'), []);
+      $('transcribeFile').disabled = false;
+    }
+    fileInput.addEventListener('change', () => selectFile(fileInput.files[0]));
+    ['dragenter', 'dragover'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.remove('drag'); }));
+    dropZone.addEventListener('drop', event => selectFile(event.dataTransfer.files[0]));
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    function uploadTranscription(form) {
+      return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open('POST', '/v1/stt');
+        request.upload.onprogress = event => {
+          if (!event.lengthComputable) return;
+          const percent = Math.min(100, Math.round(event.loaded / event.total * 100));
+          $('fileProgressText').textContent = percent < 100 ? `Uploading · ${percent}%` : 'Preparing audio…';
+          $('fileProgressBar').classList.remove('indeterminate');
+          $('fileProgressBar').style.width = `${percent}%`;
+        };
+        request.upload.onload = () => {
+          $('fileProgressText').textContent = 'Listening through the recording…';
+          $('fileProgressBar').style.width = '';
+          $('fileProgressBar').classList.add('indeterminate');
+        };
+        request.onerror = () => reject(new Error('Upload failed. Check the connection and try again.'));
+        request.onabort = () => reject(new Error('Upload was cancelled.'));
+        request.onload = () => {
+          let payload;
+          try { payload = JSON.parse(request.responseText); }
+          catch {
+            const message = request.responseText && request.responseText.length < 240
+              ? request.responseText
+              : 'The server returned an invalid response.';
+            reject(new Error(message));
+            return;
+          }
+          if (request.status < 200 || request.status >= 300) {
+            const detail = typeof payload.detail === 'string' ? payload.detail : 'Transcription failed.';
+            reject(new Error(detail));
+            return;
+          }
+          resolve(payload);
+        };
+        request.send(form);
+      });
+    }
+
+    $('transcribeFile').addEventListener('click', async () => {
+      if (fileBusy) return;
+      const file = selectedFile;
+      if (!file) return;
+      fileBusy = true;
+      const form = new FormData();
+      form.append('file', file); form.append('quality', $('fileQuality').value); form.append('response_format', 'verbose_json');
+      form.append('word_timestamps', 'false'); form.append('vad_filter', 'true');
+      if ($('fileLanguage').value) form.append('language', $('fileLanguage').value);
+      $('transcribeFile').disabled = true;
+      $('transcribeFile').classList.add('loading');
+      $('transcribeFile').textContent = 'Working';
+      fileInput.disabled = true;
+      $('fileResult').classList.remove('show');
+      $('fileProgress').hidden = false;
+      $('fileProgressText').textContent = 'Uploading · 0%';
+      $('fileProgressBar').classList.remove('indeterminate');
+      $('fileProgressBar').style.width = '0%';
+      const startedAt = Date.now();
+      const updateElapsed = () => $('fileElapsed').textContent = `${Math.floor((Date.now() - startedAt) / 1000)}s`;
+      updateElapsed();
+      fileTimer = setInterval(updateElapsed, 500);
+      try {
+        const result = await uploadTranscription(form);
+        const hasSpeech = result.speechDetected !== false && Boolean(result.text);
+        $('fileTranscript').textContent = hasSpeech
+          ? result.text
+          : (result.noSpeechReason || 'No speech was detected in this recording.');
+        $('fileTranscript').classList.toggle('no-speech', !hasSpeech);
+        $('fileResult').classList.add('show');
+        pills($('fileMeta'), hasSpeech
+          ? [`${result.language} · ${Math.round(result.languageProbability * 100)}%`, result.model, `${result.durationSeconds}s audio`, `${result.processingMs}ms processed`, result.realtimeFactor != null ? `${result.realtimeFactor}× real time` : '']
+          : ['No speech', `${result.durationSeconds}s checked`, `${result.durationAfterVadSeconds}s after silence filter`, result.model]);
+      } catch (error) {
+        $('fileTranscript').textContent = error.message || 'Transcription failed.';
+        $('fileTranscript').classList.add('no-speech');
+        $('fileResult').classList.add('show');
+        pills($('fileMeta'), ['Could not transcribe']);
+        notify(error.message || 'Transcription failed');
+      } finally {
+        fileBusy = false;
+        clearInterval(fileTimer);
+        $('fileProgress').hidden = true;
+        fileInput.disabled = false;
+        $('transcribeFile').disabled = false;
+        $('transcribeFile').classList.remove('loading');
+        $('transcribeFile').textContent = 'Transcribe';
+      }
+    });
+
+    let mediaStream, micContext, micSource, micNode, silentGain, sttSocket, recordStarted, timerHandle;
+    let captureSampleRate = 0, liveAttempt = 0, liveReady = false, liveStopping = false;
+    let liveFinalReceived = false, liveFailureHandled = false, connectionTimer, finalTimer;
+    function pcm16(input) {
+      const output = new Int16Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const sample = Math.max(-1, Math.min(1, input[i]));
+        output[i] = sample < 0 ? sample * 32768 : sample * 32767;
+      }
+      return output.buffer;
+    }
+    function updateMeter(samples) {
+      let sum = 0; for (let i = 0; i < samples.length; i += 8) sum += samples[i] * samples[i];
+      const rms = Math.sqrt(sum / Math.ceil(samples.length / 8));
+      const bars = meter.children, active = Math.min(bars.length, Math.round(rms * 180));
+      for (let i = 0; i < bars.length; i++) bars[i].style.height = `${6 + (i < active ? Math.random() * 30 : 0)}px`;
+    }
+    function updateTimer() {
+      const seconds = Math.floor((Date.now() - recordStarted) / 1000);
+      $('recordTimer').textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    }
+    function renderLivePartial(message) {
+      const transcript = $('liveTranscript');
+      const committed = message.committedText || '';
+      const pending = message.pendingText || '';
+      if (!committed && !pending) {
+        transcript.textContent = message.text || 'Listening for speech…';
+        transcript.classList.toggle('empty', !message.text);
+        return;
+      }
+      transcript.replaceChildren();
+      if (committed) transcript.append(document.createTextNode(committed));
+      if (pending) {
+        const span = document.createElement('span');
+        span.className = 'pending';
+        span.textContent = `${committed ? ' ' : ''}${pending}`;
+        transcript.append(span);
+      }
+      transcript.classList.remove('empty');
+    }
+    function resetLiveControls() {
+      $('startMic').disabled = false; $('startMic').textContent = 'Start listening';
+      $('stopMic').disabled = true; $('stopMic').textContent = 'Stop & finalize';
+    }
+    function handleMicSamples(samples) {
+      updateMeter(samples);
+      if (liveReady && sttSocket && sttSocket.readyState === WebSocket.OPEN) {
+        sttSocket.send(pcm16(samples));
+      }
+    }
+    async function startAudioPipeline() {
+      if (!micContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error('Web Audio is not supported by this browser');
+        micContext = new AudioContextClass({latencyHint: 'interactive'});
+      }
+      if (micContext.state === 'suspended') await micContext.resume();
+      captureSampleRate = micContext.sampleRate;
+      micSource = micContext.createMediaStreamSource(mediaStream);
+
+      if (micContext.audioWorklet && window.AudioWorkletNode) {
+        const workletCode = `
+          class VoicePcmProcessor extends AudioWorkletProcessor {
+            constructor() {
+              super(); this.buffer = new Float32Array(2048); this.offset = 0;
+              this.port.onmessage = e => { if (e.data.type === 'flush' && this.offset) this.emit(); };
+            }
+            emit() { const out = this.buffer.slice(0, this.offset); this.port.postMessage(out, [out.buffer]); this.buffer = new Float32Array(2048); this.offset = 0; }
+            process(inputs) {
+              const input = inputs[0] && inputs[0][0]; if (!input) return true;
+              let cursor = 0;
+              while (cursor < input.length) { const count = Math.min(input.length - cursor, this.buffer.length - this.offset); this.buffer.set(input.subarray(cursor, cursor + count), this.offset); this.offset += count; cursor += count; if (this.offset === this.buffer.length) this.emit(); }
+              return true;
+            }
+          }
+          registerProcessor('voice-pcm', VoicePcmProcessor);`;
+        const moduleUrl = URL.createObjectURL(new Blob([workletCode], {type: 'text/javascript'}));
+        try {
+          await micContext.audioWorklet.addModule(moduleUrl);
+          micNode = new AudioWorkletNode(micContext, 'voice-pcm');
+          micNode.port.onmessage = event => handleMicSamples(event.data);
+        } catch (error) {
+          console.warn('AudioWorklet unavailable; using compatibility capture', error);
+        } finally { URL.revokeObjectURL(moduleUrl); }
+      }
+
+      if (!micNode) {
+        if (!micContext.createScriptProcessor) throw new Error('Microphone processing is not supported by this browser');
+        micNode = micContext.createScriptProcessor(2048, 1, 1);
+        micNode.onaudioprocess = event => handleMicSamples(new Float32Array(event.inputBuffer.getChannelData(0)));
+      }
+      silentGain = micContext.createGain(); silentGain.gain.value = 0;
+      micSource.connect(micNode); micNode.connect(silentGain); silentGain.connect(micContext.destination);
+      $('captureSpec').textContent = `${Math.round(captureSampleRate / 100) / 10} kHz PCM · server HQ resample`;
+    }
+    async function cleanupMic() {
+      clearInterval(timerHandle);
+      clearTimeout(connectionTimer);
+      if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+      if (micNode && micNode.port) micNode.port.onmessage = null;
+      if (micNode && 'onaudioprocess' in micNode) micNode.onaudioprocess = null;
+      for (const node of [micSource, micNode, silentGain]) if (node) try { node.disconnect(); } catch {}
+      if (micContext) try { await micContext.close(); } catch {}
+      mediaStream = micContext = micSource = micNode = silentGain = null;
+      captureSampleRate = 0;
+      Array.from(meter.children).forEach(bar => bar.style.height = '6px');
+    }
+    async function failLive(message, attempt) {
+      if (attempt !== liveAttempt || liveFailureHandled || liveFinalReceived) return;
+      liveFailureHandled = true; liveReady = false; liveStopping = false;
+      clearTimeout(finalTimer);
+      if (sttSocket) try { sttSocket.close(); } catch {}
+      await cleanupMic();
+      resetLiveControls();
+      notify(message || 'Live transcription stopped unexpectedly');
+    }
+
+    $('startMic').addEventListener('click', async () => {
+      const attempt = ++liveAttempt;
+      liveFailureHandled = false; liveFinalReceived = false; liveStopping = false; liveReady = false;
+      $('startMic').disabled = true; $('startMic').textContent = 'Requesting microphone…';
+      $('stopMic').disabled = true;
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Microphone capture is not supported by this browser');
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error('Web Audio is not supported by this browser');
+        micContext = new AudioContextClass({latencyHint: 'interactive'});
+        await micContext.resume();
+        mediaStream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: {ideal: 1}, echoCancellation: true, noiseSuppression: true, autoGainControl: true}});
+        await startAudioPipeline();
+        if (attempt !== liveAttempt) return;
+        $('startMic').textContent = 'Connecting…';
+        const socket = new WebSocket(wsUrl('/v1/stt/ws'));
+        sttSocket = socket;
+        connectionTimer = setTimeout(() => failLive('Live transcription connection timed out', attempt), 12000);
+        socket.onopen = () => socket.send(JSON.stringify({type: 'start', sample_rate: captureSampleRate, encoding: 'pcm_s16le', language: $('liveLanguage').value || null, quality: $('liveQuality').value, partial_interval_ms: 500, word_timestamps: false}));
+        socket.onmessage = event => {
+          if (attempt !== liveAttempt) return;
+          let message;
+          try { message = JSON.parse(event.data); }
+          catch { void failLive('The transcription server returned an invalid message', attempt); return; }
+          if (message.type === 'ready') {
+            clearTimeout(connectionTimer); liveReady = true; recordStarted = Date.now(); timerHandle = setInterval(updateTimer, 250);
+            $('startMic').textContent = 'Listening…'; $('stopMic').disabled = false;
+            $('liveTranscript').textContent = 'Listening for speech…';
+            $('liveTranscript').classList.add('empty');
+            $('liveTranscript').classList.remove('no-speech');
+            pills($('liveMeta'), ['Connected', message.model, `${Math.round(message.sampleRate / 100) / 10} kHz capture → 16 kHz HQ`, 'Stable live decode']);
+          } else if (message.type === 'partial') {
+            renderLivePartial(message);
+            pills($('liveMeta'), [`${message.audioSeconds}s captured`, `${message.processingMs}ms decode`, message.language, message.model, message.committedText ? 'Stable words locked' : 'Listening for context']);
+          } else if (message.type === 'final') {
+            clearTimeout(finalTimer); liveFinalReceived = true; liveReady = false; liveStopping = false;
+            $('liveTranscript').textContent = message.text || message.noSpeechReason || 'No speech detected.';
+            $('liveTranscript').classList.remove('empty');
+            $('liveTranscript').classList.toggle('no-speech', !message.text);
+            pills($('liveMeta'), [`Final · ${message.language}`, message.model, `${message.durationSeconds}s audio`, `${message.processingMs}ms processed`, message.realtimeFactor != null ? `${message.realtimeFactor}× real time` : '']);
+            resetLiveControls();
+            try { socket.close(); } catch {}
+            if (sttSocket === socket) sttSocket = null;
+          } else if (message.type === 'error') void failLive(message.error, attempt);
+        };
+        socket.onerror = () => void failLive('STT WebSocket could not connect', attempt);
+        socket.onclose = () => {
+          clearTimeout(connectionTimer);
+          if (attempt === liveAttempt && !liveFinalReceived && !liveFailureHandled) {
+            void failLive(liveStopping ? 'Connection closed before the final transcript arrived' : 'Live transcription connection closed', attempt);
+          }
+        };
+      } catch (error) { await failLive(error.message || 'Microphone access failed', attempt); }
+    });
+
+    $('stopMic').addEventListener('click', async () => {
+      const attempt = liveAttempt;
+      if (!liveReady || !sttSocket) return;
+      liveStopping = true;
+      $('stopMic').disabled = true; $('stopMic').textContent = 'Finalizing…';
+      if (micNode && micNode.port) micNode.port.postMessage({type: 'flush'});
+      await new Promise(resolve => setTimeout(resolve, 150));
+      liveReady = false;
+      await cleanupMic();
+      if (sttSocket && sttSocket.readyState === WebSocket.OPEN) {
+        sttSocket.send(JSON.stringify({type: 'stop'}));
+        finalTimer = setTimeout(() => failLive('Final transcription timed out', attempt), 45000);
+      } else {
+        await failLive('Connection closed before audio could be finalized', attempt);
+      }
+    });
+  </script>
+</body>
+</html>
