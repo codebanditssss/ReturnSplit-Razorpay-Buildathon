@@ -137,17 +137,6 @@ const TICKER: React.ReactNode[] = [
   <>64 / 64 fixtures · 0 unsafe automations · ₹0 wrong-seller</>,
 ];
 
-const RIBBON: string[] = [
-  "Integer-paise math",
-  "Provably balanced",
-  "Never holds funds",
-  "Idempotent execution",
-  "Fail-closed by default",
-  "Human approval gate",
-  "Tamper-evident trail",
-  "Right transfer, every time",
-];
-
 /* ---------- control-surface states (one real claim, RET-260903-031) ---------- */
 type SurfaceStep = { tag: string; tone: string; title: string; body: React.ReactNode };
 const STEPS: SurfaceStep[] = [
@@ -392,38 +381,12 @@ export function Landing() {
         </div>
       </div>
 
-      {/* crossing ribbons */}
-      <div className="lp-ribbons" aria-hidden>
-        <div className="lp-ribbon lp-ribbon-a">
-          <div className="lp-ribbon-track">
-            {[0, 1, 2].map((dup) => (
-              <span className="lp-ribbon-item" key={dup}>
-                {RIBBON.map((t, i) => (
-                  <span key={i}>{t}<span className="lp-ribbon-star">✳</span></span>
-                ))}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="lp-ribbon lp-ribbon-b">
-          <div className="lp-ribbon-track rev">
-            {[0, 1, 2].map((dup) => (
-              <span className="lp-ribbon-item" key={dup}>
-                {RIBBON.map((t, i) => (
-                  <span key={i}>{t}<span className="lp-ribbon-star">✳</span></span>
-                ))}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* control surface - one framed audit panel */}
       <section className="lp-section lp-fan-sec" id="surface">
         <div className="lp-wrap">
           <Reveal>
             <div className="lp-section-head center">
-              <span className="lp-eyebrow sq">The control surface <span className="lp-spark">✳</span></span>
+              <span className="lp-eyebrow sq">The control surface</span>
               <h2>One claim, five states, nothing hidden.</h2>
               <p>Every partial return moves through the same auditable surface - evidence, split,
                 reversal, approval, reconciliation. Here is claim RET-260903-031, start to close.</p>
