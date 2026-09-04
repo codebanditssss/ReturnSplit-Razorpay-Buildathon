@@ -24,7 +24,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ReturnSplit - reverse the exact sellers on a partial marketplace refund",
+  title: "ReturnSplit",
   description:
     "When a buyer returns part of a multi-vendor order, Razorpay can't tell which Route transfer to reverse. ReturnSplit computes the exact per-seller paise, reverses the right transfers, then refunds the customer - behind human approval and a tamper-evident trail.",
 };
