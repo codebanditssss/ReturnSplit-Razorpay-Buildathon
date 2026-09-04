@@ -1,0 +1,38 @@
+%% ReturnSplit - control flow for Excalidraw (Mermaid to Excalidraw)
+%% Paste into Excalidraw: menu > Insert > Mermaid. Then restyle to hand-drawn.
+flowchart TD
+  A([Approved return]) --> B[Validate against order,<br/>seller, frozen policy,<br/>quantities, Route transfers]
+  B --> C{Unambiguous<br/>and valid?}
+
+  C -->|No: ambiguous evidence| R1[[Human review<br/>abstain + rationale]]
+  C -->|No: stale or low balance| R2[[Block<br/>open reconciliation case]]
+  R1 --> B
+
+  C -->|Yes| D[Deterministic paise plan<br/>refund · reversal · contribution]
+  D --> E[/Freeze plan behind<br/>SHA-256 fingerprint/]
+  E --> F{{Maker-checker<br/>human approval}}
+  F --> G[Persist saga intent]
+  G --> H[Reverse each<br/>seller transfer]
+  H --> I{Provider<br/>response?}
+  I -->|Unknown| J[Reconcile by receipt<br/>never blind retry]
+  J --> H
+  I -->|Confirmed| K[Create customer refund<br/>only after reversals]
+  K --> L([Redacted audit bundle])
+
+  subgraph PLAN [Cash planning - no payment authority]
+    P1[Aggregate daily<br/>refund history] --> P2{TimesFM<br/>available?}
+    P2 -->|Yes| P3[p10 / p50 / p90 forecast]
+    P2 -->|No| P4[Labeled deterministic<br/>fallback]
+    P3 --> P5[Reserve + staffing view]
+    P4 --> P5
+  end
+
+  classDef ok fill:#dff3ea,stroke:#176247,stroke-width:2px,color:#123;
+  classDef stop fill:#fde8e4,stroke:#b23b2e,stroke-width:2px,color:#123;
+  classDef gate fill:#fff3d6,stroke:#a5751a,stroke-width:2px,color:#123;
+  classDef plan fill:#e8eefb,stroke:#3355aa,stroke-width:2px,color:#123;
+
+  class A,D,K,L ok;
+  class R1,R2,J stop;
+  class C,F,I,P2 gate;
+  class P1,P3,P4,P5 plan;
