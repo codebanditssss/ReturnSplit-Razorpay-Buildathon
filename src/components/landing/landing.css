@@ -146,7 +146,6 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
   content: ""; position: absolute; left: 2%; right: 2%; bottom: -.16em; height: .09em;
   background: var(--lp-green); border-radius: 999px; opacity: .9;
 }
-.lp-hero .lp-hero-sub { max-width: 60ch; margin: 26px auto 0; font-size: clamp(16px, 1.7vw, 18.5px); color: var(--lp-text-2); line-height: 1.55; }
 .lp-hero-actions { display: flex; gap: 12px; justify-content: center; margin: 34px 0 0; flex-wrap: wrap; }
 .lp-hero-trust { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin: 28px 0 0; }
 .lp-hero-trust span { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--lp-text-2); }
@@ -321,10 +320,6 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-footer-links { display: flex; justify-content: flex-end; gap: 6px 22px; flex-wrap: wrap; }
 .lp-footer-links a { font-size: 13px; color: var(--lp-text-2); transition: color .15s ease; }
 .lp-footer-links a:hover { color: var(--lp-text); }
-.lp-footer-status { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 34px; border: 1px solid var(--lp-line); border-radius: 10px; background: var(--lp-surface); overflow: hidden; }
-.lp-footer-status span { padding: 10px 13px; border-left: 1px solid var(--lp-line-2); font-family: var(--lp-mono-stack); font-size: 10.5px; color: var(--lp-text-3); text-align: center; }
-.lp-footer-status span:first-child { border-left: 0; color: var(--lp-green); }
-.lp-footer-status i { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--lp-green); }
 .lp-footer-note { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--lp-line); display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: 11.5px; color: var(--lp-text-3); }
 
 /* ============ ANIMATIONS ============ */
@@ -448,9 +443,6 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
   .lp-srow-main { display: none; }
   .lp-srow.active button { box-shadow: inset 0 -3px 0 var(--lp-green); }
   .lp-footer-top { align-items: flex-start; }
-  .lp-footer-status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lp-footer-status span:nth-child(3) { border-left: 0; border-top: 1px solid var(--lp-line-2); }
-  .lp-footer-status span:nth-child(4) { border-top: 1px solid var(--lp-line-2); }
 }
 @media (max-width: 560px) {
   .lp-nav { padding: 0 12px; }

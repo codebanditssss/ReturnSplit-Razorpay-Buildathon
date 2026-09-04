@@ -284,11 +284,6 @@ export function Landing() {
             <span>One item comes back.</span>
             <span>Reverse the <em>exact</em> transfer.</span>
           </h1>
-          <p className="lp-hero-sub">
-            A buyer sends part of a multi-vendor order back, and Razorpay Route can&rsquo;t tell whose transfer to
-            unwind. ReturnSplit computes each seller&rsquo;s share to the last paisa, then the simulator or Test Mode
-            adapter follows reversal-before-refund ordering behind human approval and a process-local audit history.
-          </p>
           <div className="lp-hero-actions">
             <Link className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</Link>
             <Link className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">View demo claim</Link>
@@ -615,12 +610,6 @@ export function Landing() {
               <a href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon" target="_blank" rel="noreferrer">GitHub</a>
               <a href="https://razorpay.com/docs/payments/route/" target="_blank" rel="noreferrer">Route docs</a>
             </div>
-          </div>
-          <div className="lp-footer-status">
-            <span><i /> Test mode</span>
-            <span>Deterministic demo data</span>
-            <span>No live money moves</span>
-            <span>Evaluation snapshot available</span>
           </div>
           <div className="lp-footer-note">
             <span>Demo figures use a deterministic simulator; an optional Razorpay Test Mode adapter is available. Live keys are rejected, no live money moves, and ReturnSplit never holds funds.</span>
