@@ -39,10 +39,11 @@ pnpm build
 
 - Exact golden case: customer refund `232854`, Aavya reversal `197926`, Mora contribution `34928`, shipping refund `0`—all integer paise.
 - Ambiguous item and unclear liability become review states, not guessed money movement.
+- An operator can explicitly abstain, record a required rationale, and open an owned evidence request with a due time and next action.
 - Human item matches and funding decisions persist for the server session, rerun the real calculator, and produce a new approval fingerprint.
-- Approval requires a visible balance refresh, and execution re-fetches the payment and required Route transfers before creating a new saga; any snapshot mismatch fails closed.
+- Approval requires a visible, persisted balance refresh, and execution re-fetches the payment and required Route transfers before creating a new saga. Payment components plus transfer source, recipient, status, and amount components must match; any drift fails closed.
 - Insufficient reversible balance blocks approval.
-- Blocked claims can open a persisted payments-reconciliation case.
+- Blocked claims can open an owned payments-reconciliation case. Marketplace-funded uncertainty opens a separate recovery case with a target, recovered and written-off totals, responsible party, notes, aging, and explicit closure rather than silently writing off exposure.
 - Duplicate approvals and webhooks cannot create duplicate effects.
 - A retry resumes the existing saga and skips confirmed operations.
 - An unknown reversal response is re-fetched and reconciled; the POST is never blindly repeated.
@@ -78,6 +79,21 @@ for real aggregate input and strict `--require-timesfm` usage.
 
 TimesFM 2.5 is used because its model weights are Apache-2.0. TimesFM 3.0 is newer, but its published checkpoint is currently restricted to non-commercial, non-production use. Forecasts inform reserve planning and staffing only; they never approve or size a claim-level reversal.
 
+No additional local model is required for the buildathon proof. Reason classifiers,
+semantic policy search, reranking, speech transcription, and a small generative
+model become useful only when real merchant inputs justify those capabilities
+and their own evaluation gates. The current demo uses precomputed extraction
+fixtures, exact policy lookup, and deterministic redaction so model output never
+becomes payment authority. Forecasting and backtesting are the only scheduled
+model workload in scope.
+
+The Reserve page closes the planning loop without giving the model payment
+authority. It adds the current priced queue to forecasted new demand, deducts
+only currently executable seller reversals, reserves blocked, terminal-failure,
+and provider-unknown claims in full,
+and calls out unpriced claims separately. This definition prevents the open
+queue from being counted twice in the forecast horizon.
+
 ## Architecture
 
 ```text
@@ -99,7 +115,7 @@ See [architecture.md](docs/architecture.md), [threat-model.md](docs/threat-model
 
 ## Truthful scope
 
-This repository is a polished prototype and engineering harness, not production financial infrastructure. Before live deployment it still needs durable storage and locks, authenticated tenant isolation, a job queue, WORM or hash-chained audit export, real marketplace data validation, and recorded Razorpay Test Mode evidence.
+This repository is a polished prototype and engineering harness, not production financial infrastructure. Before live deployment it still needs durable storage and distributed locks, authenticated tenant isolation and maker-checker authorization, a job queue, rate limiting, WORM or hash-chained audit retention, real marketplace data validation, and a recorded Razorpay Test Mode trace. The current operations cases and standalone preflight records are intentionally process-local.
 
 ## Sources
 

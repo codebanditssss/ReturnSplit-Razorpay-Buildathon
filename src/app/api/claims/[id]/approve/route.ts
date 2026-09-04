@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { maskProviderReference } from "@/lib/claim-workbench-view";
 import { getOrderById, getPolicyById } from "@/lib/data";
 import { executeApprovedRefund, refundPlanFingerprint } from "@/lib/execution-saga";
-import { getDemoRuntime, getDemoWorkflowClaim, recordDemoClaimCompletion } from "@/server/demo-runtime";
+import { getDemoPreflight, getDemoRuntime, getDemoWorkflowClaim, recordDemoClaimCompletion } from "@/server/demo-runtime";
 import { MAX_MUTATION_BODY_BYTES, readBoundedJson, RequestBodyError } from "@/server/http-request";
 import { isSameOriginMutation, mutationRequestId } from "@/server/mutation-request";
 
@@ -48,6 +48,21 @@ export async function POST(request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: "Seeded demo payment IDs cannot be sent to Razorpay Test Mode. Import matching Test Mode fixtures first." }, { status: 409 });
   }
   try {
+    const existingSaga = await store.findByClaimId(claim.id);
+    if (!existingSaga && claim.status === "ready_for_approval") {
+      const preflight = getDemoPreflight(claim.id);
+      const expiresAt = preflight ? Date.parse(preflight.expiresAt) : Number.NaN;
+      if (
+        !preflight
+        || preflight.outcome !== "verified"
+        || preflight.planFingerprint !== actualPlanFingerprint
+        || preflight.providerMode !== provider.mode
+        || !Number.isFinite(expiresAt)
+        || expiresAt <= Date.now()
+      ) {
+        return NextResponse.json({ error: "A current verified provider balance check is required before approval." }, { status: 409 });
+      }
+    }
     const executionOrder = claim.status === "processing"
       ? {
           ...order,
@@ -55,7 +70,7 @@ export async function POST(request: Request, { params }: RouteContext) {
           transfers: order.transfers.map((transfer) => ({ ...transfer, reversedAmountPaise: 0, status: "processed" as const })),
         }
       : order;
-    if (claim.status === "processing" && !(await store.findByClaimId(claim.id))) {
+    if (claim.status === "processing" && !existingSaga) {
       if (!demoProvider) throw new Error("The seeded retry scenario is available only with the demo provider");
       const failedTransfer = claim.decision.sellerReversals.find((reversal) => reversal.sellerName === "Field Notes");
       if (!failedTransfer) throw new Error("Retry fixture has no remaining reversal");

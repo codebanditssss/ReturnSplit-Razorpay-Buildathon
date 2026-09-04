@@ -20,7 +20,7 @@ The saga persists intent before every call. Refund requests reuse one idempotenc
 
 ### Stale or manipulated plans
 
-Approval binds the evidence hashes, complete money-decision policy rules, payment and transfer IDs, seller mapping, ordered and returned quantities, currency, amounts, and provider snapshot. Before inserting a new saga, the server re-fetches the authoritative payment and required transfers and fails closed if remaining refundable or reversible balances differ from that snapshot. The operator-facing preflight uses the same check, and execution repeats it rather than trusting the browser result. The engine independently re-derives line allocations and reversals from the bound snapshot, and the store rejects later plan mutation. The demo store also atomically reserves returned quantities per order line so distinct claims cannot over-return one purchase. A production store must enforce the same reservation with durable serializable transactions, lock the payment and transfers in stable order, use fencing tokens, and minimize the remaining time-of-check/time-of-use window across provider calls.
+Approval binds the evidence hashes, complete money-decision policy rules, payment and transfer IDs, seller mapping, ordered and returned quantities, currency, amounts, and provider snapshot. Before inserting a new saga, the server re-fetches the authoritative payment and required transfers. It compares payment amount/refunded components and each transfer's source payment, recipient account, status, original amount, and reversed amount; matching only a derived remainder is insufficient. The operator-facing preflight uses the same check, is retained against the exact plan fingerprint for five minutes, and execution repeats it rather than trusting the browser result. The engine independently re-derives line allocations and reversals from the bound snapshot, and the store rejects later plan mutation. The demo store also atomically reserves returned quantities per order line so distinct claims cannot over-return one purchase. A production store must enforce the same reservation with durable serializable transactions, lock the payment and transfers in stable order, use fencing tokens, and minimize the remaining time-of-check/time-of-use window across provider calls.
 
 ### Webhook forgery and replay
 
@@ -33,6 +33,16 @@ unless the public origin is explicitly configured, and request bodies are read
 through small streaming byte limits. These controls reduce CSRF and memory
 exhaustion risk, but they do not replace authenticated sessions, per-action
 authorization, or rate limiting.
+
+### Operations-note privacy
+
+Evidence and recovery notes are normalized, then email addresses, Indian phone
+numbers, IP addresses, and long numeric identifiers are deterministically
+redacted before process-local storage. The operator receives useful redacted
+text plus a SHA-256 integrity digest; raw notes are not retained. This narrow
+redactor is not a general PII classifier. Production still requires authenticated
+access, tenant isolation, retention controls, and a measured DLP policy for names,
+addresses, account references, and merchant-specific identifiers.
 
 ### Tenant and secret leakage
 
@@ -63,4 +73,4 @@ and generate it from a durable tamper-evident audit store.
 
 ## Prototype limitations
 
-The included saga store and webhook inbox are in-memory test components. They demonstrate semantics but are not durable across processes or restarts. Live mode is intentionally unavailable.
+The included saga store, operations cases, preflight history, and webhook inbox are in-memory test components. They demonstrate semantics but are not durable across processes or restarts. Separate application workers do not share their locks, so this build must not be used for external money movement. Live mode is intentionally unavailable; only simulation and Razorpay Test Mode are accepted.

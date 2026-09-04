@@ -298,10 +298,12 @@ export interface ActivityEvent {
     | "transfer_reversed"
     | "refund_created"
     | "provider_failure"
+    | "provider_snapshot_checked"
     | "execution_started"
     | "reconciliation_pending"
     | "duplicate_event_ignored"
-    | "manual_review_requested";
+    | "manual_review_requested"
+    | "recovery_updated";
   outcome: "info" | "success" | "warning" | "danger";
   claimId?: string;
   orderId?: string;

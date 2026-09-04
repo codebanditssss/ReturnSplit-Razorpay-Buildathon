@@ -17,11 +17,36 @@ const eventPresentation: Record<ActivityEvent["type"], { title: string; label: s
   transfer_reversed: { title: "Seller transfer reversed", label: "Confirmed", tone: "completed" },
   refund_created: { title: "Refund completed", label: "Completed", tone: "completed" },
   provider_failure: { title: "Execution paused safely", label: "Retry safe", tone: "info" },
+  provider_snapshot_checked: { title: "Provider balances checked", label: "Verified", tone: "completed" },
   execution_started: { title: "Execution step submitted", label: "In progress", tone: "info" },
   reconciliation_pending: { title: "Provider result needs reconciliation", label: "Paused", tone: "review" },
   duplicate_event_ignored: { title: "Duplicate webhook ignored", label: "No action", tone: "neutral" },
   manual_review_requested: { title: "Manual review requested", label: "Waiting", tone: "review" },
+  recovery_updated: { title: "Recovery case updated", label: "Recorded", tone: "info" },
 };
+
+function presentationFor(event: ActivityEvent): { title: string; label: string; tone: StatusTone } {
+  if (event.type === "provider_failure" && event.metadata?.retryable === false) {
+    return { title: "Execution stopped safely", label: "Manual action", tone: "blocked" };
+  }
+  if (event.type === "provider_snapshot_checked") {
+    const providerOutcome = event.metadata?.outcome;
+    if (providerOutcome === "mismatch" || event.outcome === "danger") {
+      return { title: "Provider balances changed", label: "Mismatch", tone: "blocked" };
+    }
+    if (providerOutcome === "unknown" || event.outcome === "warning") {
+      return { title: "Provider balance check inconclusive", label: "Unknown", tone: "review" };
+    }
+    if (providerOutcome !== "verified" && event.outcome !== "success") {
+      return { title: "Provider balances checked", label: "Checked", tone: "info" };
+    }
+  }
+  if (event.type === "recovery_updated") {
+    if (event.outcome === "success") return { title: "Recovery case updated", label: "Closed", tone: "completed" };
+    if (event.outcome === "warning" || event.outcome === "danger") return { title: "Recovery case updated", label: "Attention", tone: "review" };
+  }
+  return eventPresentation[event.type];
+}
 
 function dateLabel(value: string): string {
   return new Intl.DateTimeFormat("en-IN", {
@@ -54,14 +79,12 @@ export default async function ActivityPage() {
           <caption className="sr-only">Decisions and provider events</caption>
           <thead><tr><th scope="col">Event</th><th scope="col">Time</th><th scope="col">Actor</th><th scope="col">Result</th><th scope="col"><span className="sr-only">Open</span></th></tr></thead>
           <tbody>{events.map((event) => {
-            const presentation = event.type === "provider_failure" && event.metadata?.retryable === false
-              ? { title: "Execution stopped safely", label: "Manual action", tone: "blocked" as const }
-              : eventPresentation[event.type];
+            const presentation = presentationFor(event);
             return <tr key={event.id}>
               <th scope="row" data-label="Event"><span className="table-primary">{presentation.title}</span><span className="table-secondary">{event.claimId ? `${event.claimId} · ` : ""}{event.summary}</span>{event.requestId && <span className="table-secondary mono">Request {event.requestId}</span>}</th>
               <td data-label="Time"><span className="table-primary mono">{timeLabel(event.occurredAt)}</span><span className="table-secondary">{dateLabel(event.occurredAt)}</span></td>
               <td data-label="Actor">{event.actor}</td><td data-label="Result"><StatusPill tone={presentation.tone}>{presentation.label}</StatusPill></td>
-              <td data-label="Open">{event.claimId && <Link className="row-link" href={`/claims/${event.claimId}`}>Open claim <Icon name="chevron-right" /></Link>}</td>
+              <td data-label="Open">{event.claimId && <Link className="row-link" href={`/claims/${event.claimId}`} aria-label={`Open claim ${event.claimId}`}>Open claim <Icon name="chevron-right" /></Link>}</td>
             </tr>;
           })}</tbody>
         </table>

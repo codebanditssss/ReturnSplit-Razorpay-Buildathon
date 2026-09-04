@@ -4,7 +4,7 @@ import { maskProviderReference } from "./claim-workbench-view";
 import { refundPlanFingerprint } from "./execution-saga";
 import type { ProviderIdentity } from "./provider";
 import type { ActivityEvent, Claim, Order, Policy } from "./types";
-import type { DemoCompletion, DemoEscalation } from "@/server/demo-runtime";
+import { toDemoEscalationReceipt, type DemoCompletion, type DemoEscalation } from "@/server/demo-runtime";
 
 const EXPORTED_AUDIT_DETAIL_KEYS = new Set([
   "amountPaise",
@@ -32,6 +32,7 @@ export interface ClaimAuditBundleInput {
   saga?: ExecutionSaga;
   completion?: DemoCompletion;
   escalation?: DemoEscalation;
+  operationsCases?: readonly DemoEscalation[];
   generatedAt?: string;
 }
 
@@ -43,6 +44,39 @@ function safeAuditDetail(detail: SagaAuditRecord["detail"]): Readonly<Record<str
   return Object.fromEntries(
     Object.entries(detail).filter(([key]) => EXPORTED_AUDIT_DETAIL_KEYS.has(key)),
   );
+}
+
+function safeOperationsCase(escalation: DemoEscalation, generatedAt: string) {
+  const receipt = toDemoEscalationReceipt(escalation, new Date(generatedAt));
+  return {
+    caseId: escalation.caseId,
+    kind: escalation.kind,
+    createdAt: escalation.createdAt,
+    updatedAt: escalation.updatedAt,
+    actor: escalation.actor,
+    queue: escalation.queue,
+    owner: escalation.owner,
+    dueAt: escalation.dueAt,
+    status: escalation.status,
+    nextAction: escalation.nextAction,
+    noteRecorded: receipt.noteRecorded,
+    notes: receipt.notes.map((note) => ({ ...note })),
+    ageHours: receipt.ageHours,
+    overdue: receipt.overdue,
+    closedAt: escalation.closedAt ?? null,
+    requestId: escalation.requestId,
+    lastRequestId: escalation.lastRequestId,
+    recovery: receipt.kind === "recovery"
+      ? {
+          targetAmountPaise: receipt.targetAmountPaise,
+          recoveredAmountPaise: receipt.recoveredAmountPaise,
+          writtenOffAmountPaise: receipt.writtenOffAmountPaise,
+          outstandingAmountPaise: receipt.outstandingAmountPaise,
+          responsibleParty: receipt.responsibleParty,
+          outcome: receipt.recoveryOutcome,
+        }
+      : null,
+  };
 }
 
 /**
@@ -59,9 +93,13 @@ export function buildClaimAuditBundle({
   saga,
   completion,
   escalation,
+  operationsCases,
   generatedAt = new Date().toISOString(),
 }: ClaimAuditBundleInput) {
   const plan = claim.decision;
+  const safeCaseHistory = (operationsCases ?? (escalation ? [escalation] : []))
+    .map((operationsCase) => safeOperationsCase(operationsCase, generatedAt));
+  const currentEscalation = escalation ? safeOperationsCase(escalation, generatedAt) : null;
   const executionReversals = saga?.reversals.map((step) => ({
     sellerName: plan?.sellerReversals.find((entry) => entry.transferId === step.transferId)?.sellerName ?? "Recorded seller",
     amountPaise: step.amountPaise,
@@ -112,6 +150,7 @@ export function buildClaimAuditBundle({
         "raw payment and transfer identifiers",
         "provider receipts and idempotency keys",
         "credentials and arbitrary provider metadata",
+        "raw operations-case notes (redacted summaries and integrity hashes are retained)",
       ],
     },
     claim: {
@@ -233,23 +272,8 @@ export function buildClaimAuditBundle({
         summary: event.summary,
         requestId: event.requestId ?? null,
       })),
-    escalation: escalation
-      ? {
-          caseId: escalation.caseId,
-          kind: escalation.kind,
-          createdAt: escalation.createdAt,
-          actor: escalation.actor,
-          queue: escalation.queue,
-          owner: escalation.owner,
-          dueAt: escalation.dueAt,
-          status: escalation.status,
-          nextAction: escalation.nextAction,
-          noteRecorded: escalation.noteRecorded,
-          rationaleSha256: escalation.rationaleSha256 ?? null,
-          closedAt: escalation.closedAt ?? null,
-          requestId: escalation.requestId,
-        }
-      : null,
+    operationsCases: safeCaseHistory,
+    escalation: currentEscalation,
     limitations: [
       "This export is generated from process-local prototype state and is not a durable audit record.",
       "Provider references are masked and customer contact data is omitted.",

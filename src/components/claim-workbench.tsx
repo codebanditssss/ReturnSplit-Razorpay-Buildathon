@@ -16,11 +16,18 @@ import { Icon } from "./icons";
 import { Card, Money, StatusPill } from "./ui";
 
 type LocalState = "initial" | "confirm" | "executing" | "completed";
-type EscalationReceipt = {
+type CaseNote = {
+  recordedAt: string;
+  actor: string;
+  redactedText: string;
+  sha256: string;
+};
+type EscalationReceiptBase = {
   caseId: string;
-  kind: "reconciliation" | "evidence_request" | "recovery";
   createdAt: string;
+  updatedAt: string;
   requestId: string;
+  lastRequestId: string;
   actor: string;
   queue: "payments_reconciliation" | "claims_review" | "recovery_operations";
   owner: string;
@@ -28,9 +35,26 @@ type EscalationReceipt = {
   status: "open" | "closed";
   nextAction: string;
   noteRecorded: boolean;
+  notes: readonly CaseNote[];
+  ageHours: number;
+  overdue: boolean;
+  closedAt?: string;
 };
+type ReviewEscalationReceipt = EscalationReceiptBase & { kind: "reconciliation" | "evidence_request" };
+type RecoveryReceipt = EscalationReceiptBase & {
+  kind: "recovery";
+  targetAmountPaise: number;
+  recoveredAmountPaise: number;
+  writtenOffAmountPaise: number;
+  outstandingAmountPaise: number;
+  responsibleParty: "unresolved" | "seller" | "courier" | "marketplace";
+  recoveryOutcome: "pending" | "partial" | "recovered" | "written_off" | "mixed";
+};
+type EscalationReceipt = ReviewEscalationReceipt | RecoveryReceipt;
 type ReviewState = "idle" | "saving" | "saved" | "error";
 type BalanceCheckState = "not_required" | "required" | "checking" | "verified" | "error";
+type RecoveryState = "idle" | "saving" | "saved" | "error";
+type RecoveryErrorTarget = "amounts" | "responsible_party" | "note" | "closure" | "form";
 
 export function ClaimWorkbench({
   claim,
@@ -39,6 +63,8 @@ export function ClaimWorkbench({
   planFingerprint,
   initialReceipt,
   initialEscalation,
+  closedEscalations = [],
+  initialPreflight,
   reviewEvents = [],
   providerMode,
   providerLabel,
@@ -49,24 +75,38 @@ export function ClaimWorkbench({
   planFingerprint?: string;
   initialReceipt?: ClaimWorkbenchReceipt;
   initialEscalation?: EscalationReceipt;
+  closedEscalations?: readonly EscalationReceipt[];
+  initialPreflight?: { planFingerprint: string; checkedAt: string; expiresAt: string };
   reviewEvents?: readonly ClaimWorkbenchActivity[];
   providerMode: "demo" | "razorpay_test";
   providerLabel: string;
 }) {
   const router = useRouter();
   const [localState, setLocalState] = useState<LocalState>("initial");
-  const [executionStep, setExecutionStep] = useState(0);
   const [selectedLine, setSelectedLine] = useState("");
   const [evidenceRationale, setEvidenceRationale] = useState("");
   const [executionError, setExecutionError] = useState("");
   const [reviewState, setReviewState] = useState<ReviewState>("idle");
   const [reviewError, setReviewError] = useState("");
-  const [balanceCheckState, setBalanceCheckState] = useState<BalanceCheckState>(claim.status === "ready_for_approval" && !claim.approvedAt ? "required" : "not_required");
-  const [balanceCheckFingerprint, setBalanceCheckFingerprint] = useState(planFingerprint ?? "");
-  const [balanceCheckedAt, setBalanceCheckedAt] = useState("");
+  const hasFreshInitialPreflight = Boolean(initialPreflight && initialPreflight.planFingerprint === planFingerprint);
+  const [balanceCheckState, setBalanceCheckState] = useState<BalanceCheckState>(hasFreshInitialPreflight ? "verified" : claim.status === "ready_for_approval" && !claim.approvedAt ? "required" : "not_required");
+  const [balanceCheckFingerprint, setBalanceCheckFingerprint] = useState(hasFreshInitialPreflight ? initialPreflight?.planFingerprint ?? "" : planFingerprint ?? "");
+  const [balanceCheckedAt, setBalanceCheckedAt] = useState(hasFreshInitialPreflight ? initialPreflight?.checkedAt ?? "" : "");
+  const [balanceExpiresAt, setBalanceExpiresAt] = useState(hasFreshInitialPreflight ? initialPreflight?.expiresAt ?? "" : "");
   const [balanceError, setBalanceError] = useState("");
   const [escalation, setEscalation] = useState<EscalationReceipt | undefined>(initialEscalation);
   const [escalating, setEscalating] = useState(false);
+  const initialRecovery = initialEscalation?.kind === "recovery" ? initialEscalation : undefined;
+  const [recoveryState, setRecoveryState] = useState<RecoveryState>("idle");
+  const [recoveryError, setRecoveryError] = useState("");
+  const [recoveryErrorTarget, setRecoveryErrorTarget] = useState<RecoveryErrorTarget>();
+  const [recoveryResponsibleParty, setRecoveryResponsibleParty] = useState<"" | "seller" | "courier" | "marketplace">(
+    initialRecovery?.responsibleParty === "unresolved" ? "" : initialRecovery?.responsibleParty ?? "",
+  );
+  const [recoveredRupees, setRecoveredRupees] = useState(initialRecovery ? paiseInput(initialRecovery.recoveredAmountPaise) : "0.00");
+  const [writtenOffRupees, setWrittenOffRupees] = useState(initialRecovery ? paiseInput(initialRecovery.writtenOffAmountPaise) : "0.00");
+  const [recoveryNote, setRecoveryNote] = useState("");
+  const [closeRecovery, setCloseRecovery] = useState(false);
   const [receipt, setReceipt] = useState<ClaimWorkbenchReceipt | undefined>(initialReceipt);
   const [isRefreshing, startStatusRefresh] = useTransition();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -112,22 +152,38 @@ export function ClaimWorkbench({
     window.requestAnimationFrame(() => approvalButtonRef.current?.focus());
   }, [claim.status, planFingerprint]);
 
+  useEffect(() => {
+    if (balanceCheckState !== "verified" || balanceCheckFingerprint !== planFingerprint) return;
+    const expiresAt = Date.parse(balanceExpiresAt);
+    const delay = Number.isFinite(expiresAt) ? Math.max(0, expiresAt - Date.now()) : 0;
+    const timeout = window.setTimeout(() => {
+      setBalanceCheckState("required");
+      setBalanceCheckedAt("");
+      setBalanceExpiresAt("");
+      setLocalState((state) => state === "confirm" ? "initial" : state);
+    }, delay);
+    return () => window.clearTimeout(timeout);
+  }, [balanceCheckFingerprint, balanceCheckState, balanceExpiresAt, planFingerprint]);
+
   async function refreshProviderBalances() {
     if (!planFingerprint) return;
     setBalanceCheckFingerprint(planFingerprint);
     setBalanceCheckState("checking");
+    setBalanceExpiresAt("");
     setBalanceError("");
     try {
       const response = await fetch(`/api/claims/${encodeURIComponent(claim.id)}/preflight`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-returnsplit-request-id": `preflight_${claim.id}_${Date.now()}` },
         body: JSON.stringify({ expectedPlanFingerprint: planFingerprint }),
       });
-      const body = await response.json() as { status?: string; checkedAt?: string; error?: string };
-      if (!response.ok || body.status !== "verified" || !body.checkedAt) {
+      const body = await response.json() as { status?: string; checkedAt?: string; expiresAt?: string; error?: string };
+      const expiresAt = body.expiresAt ? Date.parse(body.expiresAt) : Number.NaN;
+      if (!response.ok || body.status !== "verified" || !body.checkedAt || !body.expiresAt || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
         throw new Error(body.error ?? "Provider balances could not be verified.");
       }
       setBalanceCheckedAt(body.checkedAt);
+      setBalanceExpiresAt(body.expiresAt);
       setBalanceCheckState("verified");
     } catch (error) {
       setBalanceError(error instanceof Error ? error.message : "Provider balances could not be verified.");
@@ -140,14 +196,27 @@ export function ClaimWorkbench({
       setExecutionError("This plan has no review fingerprint. Reload before approving it.");
       return;
     }
+    const approvalNeedsPreflight = claim.status === "ready_for_approval" && !claim.approvedAt && !isRetry;
+    const expiration = Date.parse(balanceExpiresAt);
+    if (approvalNeedsPreflight && (
+      balanceCheckState !== "verified"
+      || balanceCheckFingerprint !== planFingerprint
+      || !Number.isFinite(expiration)
+      || expiration <= Date.now()
+    )) {
+      setBalanceCheckState("required");
+      setBalanceCheckedAt("");
+      setBalanceExpiresAt("");
+      setBalanceError("The previous balance check expired. Check current balances again before approval.");
+      setLocalState("initial");
+      return;
+    }
     setLocalState("executing");
     setExecutionError("");
-    setExecutionStep(isRetry ? 1 : 0);
     try {
-      setExecutionStep(1);
       const response = await fetch(`/api/claims/${encodeURIComponent(claim.id)}/approve`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-returnsplit-request-id": `ui_${claim.id}` },
+        headers: { "content-type": "application/json", "x-returnsplit-request-id": `approval_${claim.id}_${crypto.randomUUID()}` },
         body: JSON.stringify({ expectedPlanFingerprint: planFingerprint }),
       });
       const body = await response.json() as Partial<ClaimWorkbenchReceipt> & { state?: string; error?: string; message?: string; lastError?: string };
@@ -161,8 +230,6 @@ export function ClaimWorkbench({
       if (body.completedAt && body.requestId && body.planFingerprint && body.refundId && body.reversals) {
         setReceipt({ completedAt: body.completedAt, requestId: body.requestId, planFingerprint: body.planFingerprint, refundId: body.refundId, reversals: body.reversals });
       }
-      setExecutionStep(2);
-      setExecutionStep(3);
       setLocalState("completed");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Execution paused safely";
@@ -189,6 +256,9 @@ export function ClaimWorkbench({
       const body = await response.json() as { error?: string };
       if (!response.ok) throw new Error(body.error ?? "The review decision could not be saved");
       setReviewState("saved");
+      setEscalation((current) => current?.kind === "evidence_request" && current.status === "open"
+        ? { ...current, status: "closed" }
+        : current);
       focusApprovalAfterRefreshRef.current = true;
       router.refresh();
     } catch (error) {
@@ -201,10 +271,11 @@ export function ClaimWorkbench({
     setEscalating(true);
     setReviewError("");
     try {
+      const requestId = `escalate_${claim.id}_${crypto.randomUUID()}`;
       const response = await fetch(`/api/claims/${encodeURIComponent(claim.id)}/escalate`, {
         method: "POST",
-        headers: { "x-returnsplit-request-id": `escalate_${claim.id}` },
-        ...(input ? { headers: { "content-type": "application/json", "x-returnsplit-request-id": `escalate_${claim.id}` }, body: JSON.stringify(input) } : {}),
+        headers: { ...(input ? { "content-type": "application/json" } : {}), "x-returnsplit-request-id": requestId },
+        ...(input ? { body: JSON.stringify(input) } : {}),
       });
       const body = await response.json() as Partial<EscalationReceipt> & { error?: string };
       if (!response.ok || !body.caseId || !body.createdAt || !body.requestId || !body.actor || !body.queue || !body.owner || !body.dueAt || !body.status || !body.nextAction || !body.kind) {
@@ -220,12 +291,103 @@ export function ClaimWorkbench({
     }
   }
 
+  async function saveRecoveryUpdate() {
+    const recoveryCase = escalation?.kind === "recovery" ? escalation : undefined;
+    if (!recoveryCase || recoveryCase.status !== "open") return;
+    const recoveredAmountPaise = parseRupeesToPaise(recoveredRupees);
+    const writtenOffAmountPaise = parseRupeesToPaise(writtenOffRupees);
+    const note = recoveryNote.trim();
+    if (recoveredAmountPaise === undefined || writtenOffAmountPaise === undefined) {
+      setRecoveryError("Enter recovered and written-off totals in rupees with no more than two decimal places.");
+      setRecoveryErrorTarget("amounts");
+      setRecoveryState("error");
+      return;
+    }
+    if (recoveredAmountPaise < recoveryCase.recoveredAmountPaise || writtenOffAmountPaise < recoveryCase.writtenOffAmountPaise) {
+      setRecoveryError("Cumulative recovered and written-off totals cannot decrease.");
+      setRecoveryErrorTarget("amounts");
+      setRecoveryState("error");
+      return;
+    }
+    if (!recoveryResponsibleParty) {
+      setRecoveryError("Select the party responsible for this recovery outcome.");
+      setRecoveryErrorTarget("responsible_party");
+      setRecoveryState("error");
+      return;
+    }
+    if (note.length < 12 || note.length > 500) {
+      setRecoveryError("Add an operator note between 12 and 500 characters.");
+      setRecoveryErrorTarget("note");
+      setRecoveryState("error");
+      return;
+    }
+    const accountedAmountPaise = recoveredAmountPaise + writtenOffAmountPaise;
+    if (accountedAmountPaise > recoveryCase.targetAmountPaise) {
+      setRecoveryError("Recovered and written-off totals cannot exceed the recovery target.");
+      setRecoveryErrorTarget("amounts");
+      setRecoveryState("error");
+      return;
+    }
+    if (closeRecovery !== (accountedAmountPaise === recoveryCase.targetAmountPaise)) {
+      setRecoveryError(accountedAmountPaise === recoveryCase.targetAmountPaise
+        ? "The full target is accounted for. Mark the case closed to save this update."
+        : "A case can close only after the full target is recovered or written off.");
+      setRecoveryErrorTarget("closure");
+      setRecoveryState("error");
+      return;
+    }
+
+    setRecoveryState("saving");
+    setRecoveryError("");
+    setRecoveryErrorTarget(undefined);
+    try {
+      const response = await fetch(`/api/claims/${encodeURIComponent(claim.id)}/recovery`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-returnsplit-request-id": `recovery_${claim.id}_${crypto.randomUUID()}` },
+        body: JSON.stringify({
+          recoveredAmountPaise,
+          writtenOffAmountPaise,
+          responsibleParty: recoveryResponsibleParty,
+          note,
+          status: closeRecovery ? "closed" : "open",
+        }),
+      });
+      const body = await response.json() as Partial<RecoveryReceipt> & { error?: string };
+      if (!response.ok || body.kind !== "recovery" || !body.caseId || typeof body.outstandingAmountPaise !== "number") {
+        throw new Error(body.error ?? "The recovery update could not be saved.");
+      }
+      setEscalation(body as RecoveryReceipt);
+      setRecoveredRupees(paiseInput(body.recoveredAmountPaise ?? recoveredAmountPaise));
+      setWrittenOffRupees(paiseInput(body.writtenOffAmountPaise ?? writtenOffAmountPaise));
+      setRecoveryNote("");
+      setRecoveryState("saved");
+      setRecoveryErrorTarget(undefined);
+      router.refresh();
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : "The recovery update could not be saved.");
+      setRecoveryErrorTarget("form");
+      setRecoveryState("error");
+    }
+  }
+
   function refreshStatus() {
     startStatusRefresh(() => router.refresh());
   }
 
-  const currentStatus = isResolvedLocally ? "Completed" : operation.label;
-  const currentTone = isResolvedLocally ? "completed" : operation.tone;
+  function clearRecoveryFeedback() {
+    setRecoveryState("idle");
+    setRecoveryError("");
+    setRecoveryErrorTarget(undefined);
+  }
+
+  const openRecovery = escalation?.kind === "recovery" && escalation.status === "open";
+  const refundCompleted = isResolvedLocally || claim.status === "completed";
+  const refundCompletedWithOpenRecovery = openRecovery && refundCompleted;
+  const visibleClosedEscalations = closedEscalations
+    .filter((entry) => !(escalation?.kind === "recovery" && entry.caseId === escalation.caseId))
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  const currentStatus = openRecovery && refundCompleted ? "Refund complete · recovery open" : isResolvedLocally ? "Completed" : operation.label;
+  const currentTone = openRecovery && refundCompleted ? "review" as const : isResolvedLocally ? "completed" as const : operation.tone;
   const approvalRecorded = isResolvedLocally || Boolean(claim.approvedAt);
   const requiresFreshBalanceCheck = claim.status === "ready_for_approval" && !approvalRecorded && !isRetry;
   const currentBalanceCheckState = balanceCheckFingerprint === planFingerprint
@@ -238,6 +400,13 @@ export function ClaimWorkbench({
     line: order.lines.find((line) => line.id === returned.orderLineId),
   }));
   const everyItemMatched = returnedLines.every(({ line }) => Boolean(line));
+  const returnedQuantityByLine = new Map<string, number>();
+  for (const returned of claim.returnedItems) {
+    if (!returned.orderLineId) continue;
+    returnedQuantityByLine.set(returned.orderLineId, (returnedQuantityByLine.get(returned.orderLineId) ?? 0) + returned.quantity);
+  }
+  const isFullReturn = everyItemMatched
+    && order.lines.every((line) => returnedQuantityByLine.get(line.id) === line.quantity);
   const visibleReviewFlags = claim.review.flags.filter((flag) => flag.code !== "provider_failure" && flag.code !== "provider_result_unknown");
   const fundingSummary = !plan
     ? "Complete the highlighted review to calculate who funds the refund."
@@ -248,7 +417,9 @@ export function ClaimWorkbench({
       : plan.sellerFundedPaise
         ? `Reverse ${formatMoney(plan.sellerFundedPaise)} from ${plan.sellerReversals.map((entry) => entry.sellerName).join(" + ")}. Mora Market contributes ${formatMoney(plan.marketplaceFundedPaise)}.`
         : `Mora Market funds the full ${formatMoney(plan.customerRefundPaise)} refund.`;
-  const safetyMessage = requiresReconciliation
+  const safetyMessage = openRecovery && refundCompleted
+    ? "Recovery updates record accounting outcomes only; they cannot move customer or seller funds."
+    : requiresReconciliation
     ? "No retry will run until the provider result is confirmed."
     : needsManualIntervention
       ? "Automatic execution is blocked while payments operations resolves this failure."
@@ -291,7 +462,7 @@ export function ClaimWorkbench({
         </div>
       </header>
 
-      {isResolvedLocally && <div className="callout" style={{ marginBottom: 16 }} role="status"><Icon name="circle-check" /><div><strong>Execution completed</strong><p>The required reversal was confirmed before the customer refund. Every step was added to the audit trail.</p></div></div>}
+      {isResolvedLocally && <div className="callout" style={{ marginBottom: 16 }} role="status"><Icon name="circle-check" /><div><strong>Execution completed</strong><p>{plan?.sellerReversals.length ? "All required seller reversals were confirmed before the customer refund. Every step was added to the audit trail." : "No seller reversal was required. The marketplace-funded customer refund was confirmed and added to the audit trail."}</p></div></div>}
       {visibleReviewFlags.map((flag) => <div key={flag.code} className={`callout ${flag.tone === "danger" ? "danger" : flag.tone === "warning" ? "warning" : "info"}`} style={{ marginBottom: 16 }}><Icon name={flag.tone === "danger" ? "circle-alert" : "clock"} /><div><strong>{flag.label}</strong><p>{flag.detail}</p></div></div>)}
 
       <div className="workbench-grid">
@@ -304,48 +475,72 @@ export function ClaimWorkbench({
             </div>)}
             {claim.status === "needs_review" && claim.review.flags.some((flag) => flag.code === "ambiguous_item") && (
               <div className="review-form">
-                {escalation?.kind === "evidence_request" && escalation.status === "open" ? <OperationsCase receipt={escalation} /> : <>
-                  <div className="field"><label htmlFor="order-line">Which item did the customer return?</label><select id="order-line" value={selectedLine} onChange={(event) => setSelectedLine(event.target.value)}><option value="">Choose an order line</option>{order.lines.map((line) => <option key={line.id} value={line.id}>{line.title} · {line.variant ?? "No variant"}</option>)}</select></div>
-                  <button className="button secondary" disabled={!selectedLine || reviewState === "saving"} onClick={() => {
-                    const returnedItem = claim.returnedItems.find((item) => !item.orderLineId);
-                    if (returnedItem) void saveReviewDecision({ kind: "item_match", returnedItemId: returnedItem.id, orderLineId: selectedLine });
-                  }}><Icon name="check" /> {reviewState === "saving" ? "Saving and recalculating…" : "Confirm item and recalculate"}</button>
-                  <details className="decision-alternative"><summary>Cannot determine from this evidence</summary><div className="decision-alternative-body"><div className="field"><label htmlFor="evidence-rationale">Why is more evidence required?</label><textarea id="evidence-rationale" maxLength={500} value={evidenceRationale} onChange={(event) => setEvidenceRationale(event.target.value)} placeholder="For example: both colour variants are identical in the current photo." /><p className="field-help">Required · 12–500 characters. The demo records a hash of this note, not its raw text.</p></div><button className="button secondary" disabled={evidenceRationale.trim().length < 12 || escalating} onClick={() => void openOperationsCase({ kind: "evidence_request", rationale: evidenceRationale })}><Icon name="clock" />{escalating ? "Opening request…" : "Request customer evidence"}</button></div></details>
+                {escalation?.kind === "evidence_request" && escalation.status === "open" && <div ref={escalationStatusRef} tabIndex={-1}><OperationsCase receipt={escalation} /></div>}
+                <div className="field"><label htmlFor="order-line">Which item did the customer return?</label><select id="order-line" value={selectedLine} onChange={(event) => setSelectedLine(event.target.value)}><option value="">Choose an order line</option>{order.lines.map((line) => <option key={line.id} value={line.id}>{line.title} · {line.variant ?? "No variant"}</option>)}</select></div>
+                <button className="button secondary" disabled={!selectedLine || reviewState === "saving"} onClick={() => {
+                  const returnedItem = claim.returnedItems.find((item) => !item.orderLineId);
+                  if (returnedItem) void saveReviewDecision({ kind: "item_match", returnedItemId: returnedItem.id, orderLineId: selectedLine });
+                }}><Icon name="check" /> {reviewState === "saving" ? "Saving and recalculating…" : "Confirm item and recalculate"}</button>
+                {!(escalation?.kind === "evidence_request" && escalation.status === "open") && <>
+                  <details className="decision-alternative"><summary>Cannot determine from this evidence</summary><div className="decision-alternative-body"><div className="field"><label htmlFor="evidence-rationale">Why is more evidence required?</label><textarea id="evidence-rationale" maxLength={500} value={evidenceRationale} onChange={(event) => setEvidenceRationale(event.target.value)} placeholder="For example: both colour variants are identical in the current photo." /><p className="field-help">Required · 12–500 characters. The demo stores a redacted note and integrity hash, never the raw text.</p></div><button className="button secondary" disabled={evidenceRationale.trim().length < 12 || escalating} onClick={() => void openOperationsCase({ kind: "evidence_request", rationale: evidenceRationale })}><Icon name="clock" />{escalating ? "Opening request…" : "Request customer evidence"}</button></div></details>
                 </>}
+                {reviewError && reviewState !== "error" && <div className="callout danger" role="alert"><Icon name="circle-alert" /><div><strong>Request not opened</strong><p>{reviewError}</p></div></div>}
                 {reviewState === "saved" && <div className="callout" role="status"><Icon name="circle-check" /><div><strong>Review saved</strong><p>The claim was recalculated and the updated plan is loading.</p></div></div>}
                 {reviewState === "error" && <div className="callout danger" role="alert"><Icon name="circle-alert" /><div><strong>Review not saved</strong><p>{reviewError}</p></div></div>}
               </div>
             )}
             <section className="assessment-section" aria-labelledby="funding-decision-heading">
-              <div className="section-heading"><h3 id="funding-decision-heading">Funding decision</h3><p>Liability follows the policy active when this order was placed.</p></div>
+              <div className="section-heading"><h3 id="funding-decision-heading">Funding decision</h3><p>The immediate funding source follows the locked policy. Recovery responsibility is tracked separately.</p></div>
             <div className="decision-list">
               <div className="decision-row"><div className="decision-key">Return reason</div><div className="decision-value">{claim.reasonLabel}</div></div>
-              <div className="decision-row"><div className="decision-key">Liable party</div><div className="decision-value">{liabilityText(claim.review.liability)}</div></div>
+              <div className="decision-row"><div className="decision-key">Immediate funding source</div><div className="decision-value">{fundingSourceText(claim.review.liability)}</div></div>
               <div className="decision-row"><div className="decision-key">Why</div><div className="decision-value">{claim.review.explanation}</div></div>
               <div className="decision-row"><div className="decision-key">Policy applied</div><div className="decision-value">{policy.name} v{policy.version} · effective {dateOnly(policy.effectiveFrom)}<div className="policy-citation"><strong>{policy.citation}</strong><br />{policy.summary}</div></div></div>
             </div>
             {claim.status === "needs_review" && claim.review.flags.some((flag) => flag.code === "liability_unclear") && (
               <div className="review-form">
-                <p className="field-help">Mora Market can front the customer refund now. Recovery from the courier or seller remains a separate reconciliation decision.</p>
-                <button className="button secondary" disabled={reviewState === "saving"} onClick={() => void saveReviewDecision({ kind: "liability", liability: "marketplace" })}><Icon name="check" /> {reviewState === "saving" ? "Saving and recalculating…" : "Use marketplace funds"}</button>
-                <details className="decision-alternative"><summary>Cannot determine who should fund this</summary><div className="decision-alternative-body"><div className="field"><label htmlFor="liability-evidence-rationale">Why is more evidence required?</label><textarea id="liability-evidence-rationale" maxLength={500} value={evidenceRationale} onChange={(event) => setEvidenceRationale(event.target.value)} placeholder="For example: packaging photos do not distinguish courier damage from inadequate packing." /><p className="field-help">Required · 12–500 characters. No funding decision will be guessed.</p></div><button className="button secondary" disabled={evidenceRationale.trim().length < 12 || escalating} onClick={() => void openOperationsCase({ kind: "evidence_request", rationale: evidenceRationale })}><Icon name="clock" />{escalating ? "Opening request…" : "Request supporting evidence"}</button></div></details>
+                {escalation?.kind === "evidence_request" && escalation.status === "open" && <div ref={escalationStatusRef} tabIndex={-1}><OperationsCase receipt={escalation} /></div>}
+                <p className="field-help">Mora Market can front the customer refund now. A recovery case will track courier or seller responsibility separately.</p>
+                <button className="button secondary" disabled={reviewState === "saving"} onClick={() => void saveReviewDecision({ kind: "liability", liability: "marketplace" })}><Icon name="check" /> {reviewState === "saving" ? "Saving and recalculating…" : "Front refund from marketplace"}</button>
+                {!(escalation?.kind === "evidence_request" && escalation.status === "open") && <>
+                  <details className="decision-alternative"><summary>Cannot determine who should fund this</summary><div className="decision-alternative-body"><div className="field"><label htmlFor="liability-evidence-rationale">Why is more evidence required?</label><textarea id="liability-evidence-rationale" maxLength={500} value={evidenceRationale} onChange={(event) => setEvidenceRationale(event.target.value)} placeholder="For example: packaging photos do not distinguish courier damage from inadequate packing." /><p className="field-help">Required · 12–500 characters. No funding decision will be guessed.</p></div><button className="button secondary" disabled={evidenceRationale.trim().length < 12 || escalating} onClick={() => void openOperationsCase({ kind: "evidence_request", rationale: evidenceRationale })}><Icon name="clock" />{escalating ? "Opening request…" : "Request supporting evidence"}</button></div></details>
+                </>}
+                {reviewError && reviewState !== "error" && <div className="callout danger" role="alert"><Icon name="circle-alert" /><div><strong>Request not opened</strong><p>{reviewError}</p></div></div>}
                 {reviewState === "saved" && <div className="callout" role="status"><Icon name="circle-check" /><div><strong>Review saved</strong><p>The claim was recalculated and the updated plan is loading.</p></div></div>}
                 {reviewState === "error" && <div className="callout danger" role="alert"><Icon name="circle-alert" /><div><strong>Review not saved</strong><p>{reviewError}</p></div></div>}
               </div>
             )}
-            {escalation?.kind === "recovery" && <div className="review-form"><OperationsCase receipt={escalation} /></div>}
+            {escalation?.kind === "recovery" && <div className="review-form"><RecoveryCase
+              receipt={escalation}
+              canUpdate={refundCompleted}
+              responsibleParty={recoveryResponsibleParty}
+              recoveredRupees={recoveredRupees}
+              writtenOffRupees={writtenOffRupees}
+              note={recoveryNote}
+              closeCase={closeRecovery}
+              state={recoveryState}
+              error={recoveryError}
+              errorTarget={recoveryErrorTarget}
+              onResponsiblePartyChange={(value) => { setRecoveryResponsibleParty(value); clearRecoveryFeedback(); }}
+              onRecoveredRupeesChange={(value) => { setRecoveredRupees(value); setCloseRecovery(false); clearRecoveryFeedback(); }}
+              onWrittenOffRupeesChange={(value) => { setWrittenOffRupees(value); setCloseRecovery(false); clearRecoveryFeedback(); }}
+              onNoteChange={(value) => { setRecoveryNote(value); clearRecoveryFeedback(); }}
+              onCloseCaseChange={(value) => { setCloseRecovery(value); clearRecoveryFeedback(); }}
+              onSave={() => void saveRecoveryUpdate()}
+            /></div>}
+            {visibleClosedEscalations.length > 0 && <details className="case-history"><summary>Prior operations cases ({visibleClosedEscalations.length})</summary><div className="case-history-list">{visibleClosedEscalations.map((entry) => <OperationsCase key={entry.caseId} receipt={entry} announce={false} />)}</div></details>}
             </section>
           </Card>
 
           <aside className="workbench-side" aria-label="Claim action">
             <section className="card action-card">
               <div className="action-summary">
-                <p className="eyebrow">{isResolvedLocally || claim.status === "completed" ? "Final outcome" : claim.status === "processing" ? "Execution status" : "Approval summary"}</p>
+                <p className="eyebrow">{refundCompletedWithOpenRecovery ? "Customer refund outcome" : isResolvedLocally || claim.status === "completed" ? "Final outcome" : claim.status === "processing" ? "Execution status" : "Approval summary"}</p>
                 <h2 className="section-title">{plan ? <>Refund <Money paise={plan.customerRefundPaise} /></> : claim.review.headline}</h2>
                 <p className="action-subtitle">{fundingSummary}</p>
                 <div className="action-divider" />
-                {localState === "executing" ? <div ref={executionStatusRef} tabIndex={-1}>{requiresReconciliation ? <div className="progress-step current" aria-live="polite"><span className="step-icon"><span className="spinner" style={{ width: 9, height: 9, borderColor: "#cad1cc", borderTopColor: "#176247" }} /></span><span>Checking provider result</span><span>Working…</span></div> : <ExecutionProgress step={executionStep} isRetry={isRetry} isRefundRetry={retryingRefund} sellerReversalCount={plan?.sellerReversals.length ?? 0} />}</div>
-                  : isResolvedLocally || claim.status === "completed" ? <div ref={executionStatusRef} tabIndex={-1} className="callout"><Icon name="circle-check" /><div><strong>Execution complete</strong><p>{isResolvedLocally ? "The provider state and local ledger agree." : operation.detail}</p></div></div>
+                {localState === "executing" ? <div ref={executionStatusRef} tabIndex={-1}><div className="progress-step current" aria-live="polite"><span className="step-icon"><span className="spinner" style={{ width: 9, height: 9, borderColor: "#cad1cc", borderTopColor: "#176247" }} /></span><span>{requiresReconciliation ? "Checking provider result…" : "Executing approved plan…"}</span><span>Waiting for provider</span></div></div>
+                  : isResolvedLocally || claim.status === "completed" ? <div ref={executionStatusRef} tabIndex={-1} className="callout"><Icon name="circle-check" /><div><strong>{refundCompletedWithOpenRecovery ? "Customer refund complete" : "Execution complete"}</strong><p>{refundCompletedWithOpenRecovery ? "The refund is confirmed. Recovery remains open in the claim assessment." : isResolvedLocally ? "The provider state and local ledger agree." : operation.detail}</p></div></div>
                     : requiresReconciliation ? <><div className="callout warning" role="status"><Icon name="circle-alert" /><div><strong>{operation.heading}</strong><p>{operation.detail}</p></div></div><button ref={approvalButtonRef} className="button action-primary action-followup" disabled={!planFingerprint} onClick={() => void executePlan()}><Icon name="refresh" />Check provider result</button></>
                       : claim.status === "ready_for_approval" && currentBalanceCheckState !== "verified" ? <button ref={approvalButtonRef} className="button action-primary" disabled={!planFingerprint || currentBalanceCheckState === "checking"} onClick={() => void refreshProviderBalances()}><Icon name="refresh" />{currentBalanceCheckState === "checking" ? "Checking balances…" : "Check current balances"}</button>
                       : isRetry || claim.status === "ready_for_approval" ? <button ref={approvalButtonRef} className="button action-primary" disabled={!planFingerprint} onClick={() => setLocalState("confirm")}><Icon name={isRetry ? "refresh" : "check"} />{approvalLabel}</button>
@@ -370,10 +565,10 @@ export function ClaimWorkbench({
             {plan ? <>
               <div className="table-card money-table-card" role="region" aria-label="Refund calculation"><table className="data-table money-table"><caption className="sr-only">Exact refund calculation in Indian rupees</caption><thead><tr><th scope="col">Component</th><th scope="col">Gross</th><th scope="col">Adjustment</th><th scope="col">Customer refund</th></tr></thead><tbody>
                 {plan.lineAllocations.map((line) => <tr key={line.orderLineId}><th scope="row"><span className="table-primary">{line.title}</span><span className="table-secondary">Quantity {line.quantity}</span></th><td data-label="Gross"><Money paise={line.grossPaise} /></td><td data-label="Discount">−<Money paise={line.discountAllocationPaise} /></td><td data-label="Refund"><Money paise={line.customerRefundPaise} /></td></tr>)}
-                <tr><th scope="row"><span className="table-primary">Outbound shipping</span><span className="table-secondary">Partial return policy</span></th><td data-label="Gross"><Money paise={order.shippingPaise} /></td><td data-label="Adjustment">Not refunded</td><td data-label="Refund"><Money paise={plan.shippingRefundPaise} /></td></tr>
+                <tr><th scope="row"><span className="table-primary">Outbound shipping</span><span className="table-secondary">{isFullReturn ? "Full return" : "Partial return"} · {plan.shippingRefundPaise > 0 ? "refunded by policy" : order.shippingPaise > 0 ? "not refundable by policy" : "no shipping charged"}</span></th><td data-label="Gross"><Money paise={order.shippingPaise} /></td><td data-label="Adjustment">{order.shippingPaise === plan.shippingRefundPaise ? "None" : <>−<Money paise={order.shippingPaise - plan.shippingRefundPaise} /></>}</td><td data-label="Refund"><Money paise={plan.shippingRefundPaise} /></td></tr>
               </tbody></table></div>
               <div className="reconcile-row"><span>Customer refund</span><strong><Money paise={plan.customerRefundPaise} /></strong></div>
-            </> : <div className="empty-state">Money movement is withheld until the item and liable party are unambiguous.</div>}
+            </> : <div className="empty-state">Money movement is withheld until the item and immediate funding source are unambiguous.</div>}
           </Card>
 
           <Card className="audit-card" title="Audit trail" description="Inputs, decisions, approvals, and provider results remain linked to this claim." action={<a className="button secondary" href={`/api/claims/${encodeURIComponent(claim.id)}/audit`} download><Icon name="file-text" />Download audit</a>}>
@@ -420,8 +615,81 @@ function CheckRow({ text, status }: { text: string; status: "pass" | "pending" |
   return <div className={`check-row ${status}`}><span className="check-mark"><Icon name={status === "pass" ? "check" : status === "pending" ? "clock" : "x"} /></span><span>{text}</span></div>;
 }
 
-function OperationsCase({ receipt }: { receipt: EscalationReceipt }) {
-  return <div className="case-summary" role="status"><div className="case-summary-heading"><div><span className="eyebrow">{receipt.kind === "recovery" ? "Recovery case" : receipt.kind === "evidence_request" ? "Evidence request" : "Operations case"}</span><strong>{receipt.caseId}</strong></div><StatusPill tone={receipt.status === "open" ? "review" : "completed"}>{receipt.status === "open" ? "Open" : "Closed"}</StatusPill></div><dl><div><dt>Owner</dt><dd>{receipt.owner}</dd></div><div><dt>Due</dt><dd>{dateTime(receipt.dueAt)}</dd></div><div><dt>Next action</dt><dd>{receipt.nextAction}</dd></div>{receipt.noteRecorded && <div><dt>Operator note</dt><dd>Rationale recorded securely</dd></div>}</dl></div>;
+function OperationsCase({ receipt, announce = true }: { receipt: EscalationReceipt; announce?: boolean }) {
+  const latestNote = receipt.notes.at(-1);
+  return <div className="case-summary" {...(announce ? { role: "status" } : {})}><div className="case-summary-heading"><div><span className="eyebrow">{receipt.kind === "recovery" ? "Recovery case" : receipt.kind === "evidence_request" ? "Evidence request" : "Operations case"}</span><strong>{receipt.caseId}</strong></div><StatusPill tone={receipt.status === "open" ? "review" : "completed"}>{receipt.status === "open" ? "Open" : "Closed"}</StatusPill></div><dl><div><dt>Owner</dt><dd>{receipt.owner}</dd></div><div><dt>Due</dt><dd>{dateTime(receipt.dueAt)}{receipt.overdue ? " · overdue" : ""}</dd></div><div><dt>Age</dt><dd>{formatCaseAge(receipt.ageHours)}</dd></div><div><dt>Next action</dt><dd>{receipt.nextAction}</dd></div>{latestNote && <div><dt>Latest note</dt><dd>{latestNote.redactedText}</dd></div>}</dl></div>;
+}
+
+function RecoveryCase({
+  receipt,
+  canUpdate,
+  responsibleParty,
+  recoveredRupees,
+  writtenOffRupees,
+  note,
+  closeCase,
+  state,
+  error,
+  errorTarget,
+  onResponsiblePartyChange,
+  onRecoveredRupeesChange,
+  onWrittenOffRupeesChange,
+  onNoteChange,
+  onCloseCaseChange,
+  onSave,
+}: {
+  receipt: RecoveryReceipt;
+  canUpdate: boolean;
+  responsibleParty: "" | "seller" | "courier" | "marketplace";
+  recoveredRupees: string;
+  writtenOffRupees: string;
+  note: string;
+  closeCase: boolean;
+  state: RecoveryState;
+  error: string;
+  errorTarget?: RecoveryErrorTarget;
+  onResponsiblePartyChange: (value: "seller" | "courier" | "marketplace") => void;
+  onRecoveredRupeesChange: (value: string) => void;
+  onWrittenOffRupeesChange: (value: string) => void;
+  onNoteChange: (value: string) => void;
+  onCloseCaseChange: (value: boolean) => void;
+  onSave: () => void;
+}) {
+  const recoveredAmountPaise = parseRupeesToPaise(recoveredRupees);
+  const writtenOffAmountPaise = parseRupeesToPaise(writtenOffRupees);
+  const fullTargetAccounted = recoveredAmountPaise !== undefined
+    && writtenOffAmountPaise !== undefined
+    && recoveredAmountPaise + writtenOffAmountPaise === receipt.targetAmountPaise;
+  const isSaving = state === "saving";
+  const errorId = state === "error" && error ? "recovery-form-error" : undefined;
+  const describedBy = (helpId: string, target: RecoveryErrorTarget) => errorId && errorTarget === target ? `${helpId} ${errorId}` : helpId;
+
+  return <div className="recovery-case">
+    <OperationsCase receipt={receipt} />
+    <div className="recovery-ledger" aria-label="Recovery accounting">
+      <div><span>Recovery target</span><strong><Money paise={receipt.targetAmountPaise} /></strong></div>
+      <div><span>Recovered</span><strong><Money paise={receipt.recoveredAmountPaise} /></strong></div>
+      <div><span>Written off</span><strong><Money paise={receipt.writtenOffAmountPaise} /></strong></div>
+      <div className="recovery-outstanding"><span>Outstanding</span><strong><Money paise={receipt.outstandingAmountPaise} /></strong></div>
+    </div>
+    <div className="recovery-responsibility"><span>Recovery responsibility</span><strong>{recoveryPartyLabel(receipt.responsibleParty)}</strong><span>Outcome</span><strong>{recoveryOutcomeLabel(receipt.recoveryOutcome)}</strong></div>
+    {receipt.notes.length > 0 && <details className="case-notes"><summary>View redacted note history ({receipt.notes.length})</summary><ol>{receipt.notes.map((entry, index) => <li key={`${entry.recordedAt}-${entry.sha256}-${index}`}><p>{entry.redactedText}</p><span>{entry.actor} · {dateTime(entry.recordedAt)} · integrity {shortHash(entry.sha256)}</span></li>)}</ol></details>}
+    {receipt.status === "open" && !canUpdate && <div className="callout info" role="status"><Icon name="clock" /><div><strong>Recovery ledger is waiting for the refund</strong><p>The case is tracked now, but recovered and written-off totals can be posted only after the customer refund is confirmed.</p></div></div>}
+    {receipt.status === "open" && canUpdate ? <form className="recovery-update-form" noValidate aria-busy={isSaving} aria-describedby={errorTarget === "form" ? errorId : undefined} onSubmit={(event) => { event.preventDefault(); onSave(); }}>
+      <div className="section-heading"><h4>Record recovery outcome</h4><p>Enter cumulative totals. Values cannot decrease, and the full target must be recovered or written off before closure.</p></div>
+      <fieldset className="liability-options" disabled={isSaving} aria-invalid={errorTarget === "responsible_party"} aria-describedby={errorTarget === "responsible_party" ? errorId : undefined}><legend>Responsible party (required)</legend>{(["seller", "courier", "marketplace"] as const).map((party) => <label key={party}><input type="radio" name="recovery-responsible-party" value={party} required checked={responsibleParty === party} onChange={() => onResponsiblePartyChange(party)} /><span>{recoveryPartyLabel(party)}</span></label>)}</fieldset>
+      <div className="recovery-form-grid">
+        <div className="field"><label htmlFor="recovered-total">Cumulative recovered (₹)</label><input id="recovered-total" name="recovered-total" inputMode="decimal" required disabled={isSaving} value={recoveredRupees} onChange={(event) => onRecoveredRupeesChange(event.target.value)} aria-invalid={errorTarget === "amounts"} aria-describedby={describedBy("recovery-amount-help", "amounts")} /></div>
+        <div className="field"><label htmlFor="written-off-total">Cumulative written off (₹)</label><input id="written-off-total" name="written-off-total" inputMode="decimal" required disabled={isSaving} value={writtenOffRupees} onChange={(event) => onWrittenOffRupeesChange(event.target.value)} aria-invalid={errorTarget === "amounts"} aria-describedby={describedBy("recovery-amount-help", "amounts")} /></div>
+      </div>
+      <p id="recovery-amount-help" className="field-help">Target {formatMoney(receipt.targetAmountPaise)} · currently {formatMoney(receipt.outstandingAmountPaise)} outstanding.</p>
+      <div className="field"><label htmlFor="recovery-note">Operator note</label><textarea id="recovery-note" name="recovery-note" required minLength={12} maxLength={500} disabled={isSaving} value={note} onChange={(event) => onNoteChange(event.target.value)} placeholder="Record the evidence, settlement reference, or approved write-off reason." aria-invalid={errorTarget === "note"} aria-describedby={describedBy("recovery-note-help", "note")} /><p id="recovery-note-help" className="field-help">Required · 12–500 characters. Email addresses, Indian phone numbers, IP addresses, and long numeric identifiers are deterministically redacted before storage.</p></div>
+      <label className={`checkbox-field ${!fullTargetAccounted ? "is-disabled" : ""}`}><input type="checkbox" name="close-recovery" required={fullTargetAccounted} disabled={isSaving || !fullTargetAccounted} checked={closeCase} onChange={(event) => onCloseCaseChange(event.target.checked)} aria-invalid={errorTarget === "closure"} aria-describedby={describedBy("recovery-close-help", "closure")} /><span><strong>Close this recovery case</strong><small id="recovery-close-help">Required when the full target is accounted for.</small></span></label>
+      <button className="button secondary" type="submit" disabled={isSaving}><Icon name="check" />{isSaving ? "Saving recovery…" : "Save recovery update"}</button>
+      {state === "saved" && <div className="callout" role="status"><Icon name="circle-check" /><div><strong>Recovery updated</strong><p>The totals, responsibility, and redacted note were added to the audit trail.</p></div></div>}
+      {state === "error" && error && <div id="recovery-form-error" className="callout danger" role="alert"><Icon name="circle-alert" /><div><strong>Recovery not updated</strong><p>{error}</p></div></div>}
+    </form> : receipt.status === "closed" ? <div className="callout" role="status"><Icon name="circle-check" /><div><strong>Recovery closed</strong><p>The full {formatMoney(receipt.targetAmountPaise)} target is accounted for as recovered or written off.</p></div></div> : null}
+  </div>;
 }
 
 function TimelineEvent({ icon, title, detail, time }: { icon: "circle-check" | "check" | "shield" | "inbox"; title: string; detail: string; time: string }) {
@@ -431,24 +699,32 @@ function TimelineEvent({ icon, title, detail, time }: { icon: "circle-check" | "
 function activityTimelinePresentation(type: ClaimWorkbenchActivity["type"]): { icon: "circle-check" | "check" | "shield" | "inbox"; title: string } {
   if (type === "transfer_reversed") return { icon: "check", title: "Seller reversal confirmed" };
   if (type === "provider_failure") return { icon: "shield", title: "Execution paused safely" };
+  if (type === "provider_snapshot_checked") return { icon: "shield", title: "Provider balances checked" };
   if (type === "refund_created") return { icon: "circle-check", title: "Customer refund confirmed" };
   if (type === "calculation_created") return { icon: "shield", title: "Review resolved and plan recalculated" };
   if (type === "item_extracted") return { icon: "shield", title: "Evidence match abstained" };
   if (type === "manual_review_requested") return { icon: "shield", title: "Manual review requested" };
   if (type === "approval_recorded") return { icon: "check", title: "Plan approved" };
   if (type === "duplicate_event_ignored") return { icon: "shield", title: "Duplicate event ignored" };
+  if (type === "recovery_updated") return { icon: "shield", title: "Recovery case updated" };
   if (type === "claim_received") return { icon: "inbox", title: "Return claim received" };
   return { icon: "shield", title: type === "reconciliation_pending" ? "Provider reconciliation pending" : "Execution update" };
 }
 
-function ExecutionProgress({ step, isRetry, isRefundRetry, sellerReversalCount = 1 }: { step: number; isRetry: boolean; isRefundRetry: boolean; sellerReversalCount?: number }) {
-  const steps = isRefundRetry ? ["Seller reversals confirmed", "Retry customer refund", "Confirm provider result"] : isRetry ? ["Confirmed prior reversal", "Retry remaining reversal", "Create customer refund"] : sellerReversalCount > 0 ? ["Reserve approved amounts", "Reverse seller transfer", "Create customer refund"] : ["Reserve approved amount", "Create customer refund", "Confirm provider result"];
-  return <div className="progress-steps" aria-live="polite">{steps.map((label, index) => <div className={`progress-step ${index < step ? "done" : index === step ? "current" : ""}`} key={label}><span className="step-icon">{index < step ? <Icon name="check" /> : index === step ? <span className="spinner" style={{ width: 9, height: 9, borderColor: "#cad1cc", borderTopColor: "#176247" }} /> : null}</span><span>{label}</span><span>{index < step ? "Done" : index === step ? "Working…" : "Waiting"}</span></div>)}</div>;
-}
-
 function formatMoney(paise: number) { return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2 }).format(paise / 100); }
+function paiseInput(paise: number) { return (paise / 100).toFixed(2); }
+function parseRupeesToPaise(value: string): number | undefined {
+  const normalized = value.trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return undefined;
+  const [rupees, fraction = ""] = normalized.split(".");
+  const paise = Number(rupees) * 100 + Number(fraction.padEnd(2, "0"));
+  return Number.isSafeInteger(paise) ? paise : undefined;
+}
 function dateTime(value: string) { return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }).format(new Date(value)); }
 function dateOnly(value: string) { return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value}T00:00:00+05:30`)); }
 function timeOnly(value: string) { return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }).format(new Date(value)); }
-function liabilityText(value: LiabilityParty) { return ({ seller: "Seller funds net settled item value; marketplace returns commission", marketplace: "Marketplace", courier: "Courier", customer: "Customer", unresolved: "Needs a funding decision" } as const)[value]; }
+function fundingSourceText(value: LiabilityParty) { return ({ seller: "Seller net settlement + marketplace commission", marketplace: "Mora Market", courier: "Mora Market advance; courier recovery pending", customer: "Customer", unresolved: "Not determined" } as const)[value]; }
+function recoveryPartyLabel(value: RecoveryReceipt["responsibleParty"]) { return ({ seller: "Seller", courier: "Courier", marketplace: "Marketplace / internal", unresolved: "Unresolved" } as const)[value]; }
+function recoveryOutcomeLabel(value: RecoveryReceipt["recoveryOutcome"]) { return ({ pending: "Pending", partial: "Partially accounted", recovered: "Fully recovered", written_off: "Written off", mixed: "Recovered + written off" } as const)[value]; }
+function formatCaseAge(hours: number) { return hours < 1 ? "Less than 1 hour" : hours < 24 ? `${hours} hour${hours === 1 ? "" : "s"}` : `${Math.floor(hours / 24)} day${Math.floor(hours / 24) === 1 ? "" : "s"}`; }
 function shortHash(value?: string) { return value ? `${value.slice(0, 12)}…${value.slice(-8)}` : "Not calculated"; }

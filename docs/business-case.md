@@ -94,6 +94,12 @@ ReturnSplit currently demonstrates:
 - webhook signature, rotation, replay, and conflicting-event checks;
 - aggregate refund-exposure planning using TimesFM 2.5 when configured, with a
   labeled deterministic fallback;
+- an operational reserve snapshot combining new-demand forecasts with the
+  priced open queue, executable seller reversals, blocked exposure, and
+  unpriced claims without double counting;
+- explicit evidence-request, reconciliation, and recovery cases with owners,
+  due times, next actions, redacted notes, recovery/write-off accounting, and
+  safe workflow boundaries;
 - a 64-record synthetic control replay and an inspectable exception list.
 
 The implementation evidence is documented in [Architecture](architecture.md),
@@ -121,7 +127,7 @@ order, and preserve exceptions and provider outcomes.
 | Explicit exception list | 48 records close automatically; 16 surface as abstentions or balance blocks | The fixtures are generated and not representative production claims |
 | False-positive cost | Current replay reports 0 unsafe automations and ₹0 wrong-seller overage | Those values apply only to the included synthetic dataset |
 | Throughput | The 64-record run reports wall-clock records per second and p50/p95 in-process case latency | These engine-only timings exclude network, storage, model inference, and provider calls; they do not establish production capacity |
-| Cash position | The Risk page forecasts aggregate approved-refund exposure | Forecast calibration and business impact have not been measured on real history |
+| Cash position | The Reserve page combines the open queue with aggregate new-refund demand and recommends headroom or a top-up | Forecast calibration and business impact have not been measured on real history |
 
 The AI claim must remain narrow. TimesFM is a real optional forecasting model
 for aggregate cash planning. Claim extraction in the showcased records is

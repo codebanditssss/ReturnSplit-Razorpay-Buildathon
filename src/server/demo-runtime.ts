@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { claims, getClaimById, getOrderById, getPolicyById, orders, sellers } from "@/lib/data";
 import { refundPlanFingerprint, InMemorySagaStore, type ExecutionSaga, type SagaStep } from "@/lib/execution-saga";
-import { createRazorpayTestProvider, DemoRouteProvider, type ProviderIdentity, type RoutePaymentProvider } from "@/lib/provider";
+import { createRazorpayTestProvider, DemoRouteProvider, type ProviderIdentity, type ProviderSnapshotVerification, type RoutePaymentProvider } from "@/lib/provider";
 import { calculateRefundPlan } from "@/lib/refund-engine";
 import { InMemoryWebhookInbox } from "@/lib/webhook-inbox";
 import type { ActivityEvent, CalculationIssue, Claim, LiabilityParty, ReviewFlag } from "@/lib/types";
@@ -14,6 +14,8 @@ type DemoRuntime = {
   completedClaims: Map<string, DemoCompletion>;
   claimOverrides: Map<string, Claim>;
   escalations: Map<string, DemoEscalation>;
+  escalationHistory: Map<string, DemoEscalation[]>;
+  preflights: Map<string, DemoPreflightRecord>;
   sessionActivity: ActivityEvent[];
   webhookInbox: InMemoryWebhookInbox;
 };
@@ -27,26 +29,159 @@ export interface DemoCompletion {
   reversals: Array<{ transferId: string; providerId: string; amountPaise: number }>;
 }
 
-export interface DemoEscalation {
+export interface DemoCaseNote {
+  recordedAt: string;
+  actor: string;
+  redactedText: string;
+  sha256: string;
+}
+
+interface DemoEscalationBase {
   caseId: string;
   claimId: string;
-  kind: "reconciliation" | "evidence_request" | "recovery";
   createdAt: string;
+  updatedAt: string;
   requestId: string;
+  lastRequestId: string;
   actor: string;
   queue: "payments_reconciliation" | "claims_review" | "recovery_operations";
   owner: string;
   dueAt: string;
   status: "open" | "closed";
   nextAction: string;
-  noteRecorded: boolean;
-  rationaleSha256?: string;
+  notes: readonly DemoCaseNote[];
   closedAt?: string;
+}
+
+export interface DemoReviewEscalation extends DemoEscalationBase {
+  kind: "reconciliation" | "evidence_request";
+}
+
+export type DemoRecoveryResponsibleParty = "unresolved" | "seller" | "courier" | "marketplace";
+export type DemoRecoveryOutcome = "pending" | "partial" | "recovered" | "written_off" | "mixed";
+
+export interface DemoRecoveryCase extends DemoEscalationBase {
+  kind: "recovery";
+  targetAmountPaise: number;
+  recoveredAmountPaise: number;
+  writtenOffAmountPaise: number;
+  responsibleParty: DemoRecoveryResponsibleParty;
+  processedUpdateFingerprints: ReadonlyMap<string, string>;
+}
+
+export type DemoEscalation = DemoReviewEscalation | DemoRecoveryCase;
+
+export interface DemoPreflightRecord {
+  claimId: string;
+  planFingerprint: string;
+  checkedAt: string;
+  expiresAt: string;
+  requestId: string;
+  providerMode: RoutePaymentProvider["mode"];
+  outcome: ProviderSnapshotVerification["outcome"];
+  expectedPaymentRemainingPaise: number;
+  expectedTransferRemainingPaise: number;
+  plannedRefundPaise: number;
+  plannedReversalPaise: number;
 }
 
 export interface DemoEscalationInput {
   kind?: "reconciliation" | "evidence_request";
   rationale?: string;
+}
+
+export interface DemoRecoveryUpdateInput {
+  recoveredAmountPaise: number;
+  writtenOffAmountPaise: number;
+  responsibleParty: Exclude<DemoRecoveryResponsibleParty, "unresolved">;
+  note: string;
+  status: "open" | "closed";
+}
+
+type DemoEscalationReceiptBase = Pick<DemoEscalationBase,
+  | "caseId"
+  | "createdAt"
+  | "updatedAt"
+  | "requestId"
+  | "lastRequestId"
+  | "actor"
+  | "queue"
+  | "owner"
+  | "dueAt"
+  | "status"
+  | "nextAction"
+  | "closedAt"
+> & {
+  noteRecorded: boolean;
+  notes: readonly DemoCaseNote[];
+  ageHours: number;
+  overdue: boolean;
+};
+
+export type DemoReviewEscalationReceipt = DemoEscalationReceiptBase & {
+  kind: DemoReviewEscalation["kind"];
+};
+
+export type DemoRecoveryReceipt = DemoEscalationReceiptBase & {
+  kind: "recovery";
+  targetAmountPaise: number;
+  recoveredAmountPaise: number;
+  writtenOffAmountPaise: number;
+  outstandingAmountPaise: number;
+  responsibleParty: DemoRecoveryResponsibleParty;
+  recoveryOutcome: DemoRecoveryOutcome;
+};
+
+export type DemoEscalationReceipt = DemoReviewEscalationReceipt | DemoRecoveryReceipt;
+
+function recoveryOutcome(recoveryCase: DemoRecoveryCase): DemoRecoveryOutcome {
+  if (recoveryCase.status === "open") {
+    return recoveryCase.recoveredAmountPaise + recoveryCase.writtenOffAmountPaise === 0 ? "pending" : "partial";
+  }
+  if (recoveryCase.recoveredAmountPaise === recoveryCase.targetAmountPaise) return "recovered";
+  if (recoveryCase.writtenOffAmountPaise === recoveryCase.targetAmountPaise) return "written_off";
+  return "mixed";
+}
+
+function elapsedWholeHours(start: string, end: Date): number {
+  const elapsed = end.getTime() - new Date(start).getTime();
+  return Number.isFinite(elapsed) ? Math.max(0, Math.floor(elapsed / (60 * 60 * 1_000))) : 0;
+}
+
+export function toDemoEscalationReceipt(escalation: DemoEscalation, asOf = new Date()): DemoEscalationReceipt {
+  const agingEnd = escalation.closedAt ? new Date(escalation.closedAt) : asOf;
+  const base: DemoEscalationReceiptBase = {
+    caseId: escalation.caseId,
+    createdAt: escalation.createdAt,
+    updatedAt: escalation.updatedAt,
+    requestId: escalation.requestId,
+    lastRequestId: escalation.lastRequestId,
+    actor: escalation.actor,
+    queue: escalation.queue,
+    owner: escalation.owner,
+    dueAt: escalation.dueAt,
+    status: escalation.status,
+    nextAction: escalation.nextAction,
+    noteRecorded: escalation.notes.length > 0,
+    notes: escalation.notes.map((note) => ({ ...note })),
+    ageHours: elapsedWholeHours(escalation.createdAt, agingEnd),
+    overdue: escalation.status === "open" && asOf.getTime() > new Date(escalation.dueAt).getTime(),
+    ...(escalation.closedAt ? { closedAt: escalation.closedAt } : {}),
+  };
+  if (escalation.kind !== "recovery") return { ...base, kind: escalation.kind };
+  const outstandingAmountPaise = escalation.targetAmountPaise
+    - escalation.recoveredAmountPaise
+    - escalation.writtenOffAmountPaise;
+  return {
+    ...base,
+    kind: "recovery",
+    targetAmountPaise: escalation.targetAmountPaise,
+    recoveredAmountPaise: escalation.recoveredAmountPaise,
+    writtenOffAmountPaise: escalation.writtenOffAmountPaise,
+    outstandingAmountPaise,
+    responsibleParty: escalation.responsibleParty,
+    recoveryOutcome: recoveryOutcome(escalation),
+  };
 }
 
 export type DemoReviewDecision =
@@ -60,7 +195,10 @@ export interface DemoReviewResolution {
 }
 
 const runtimeGlobal = globalThis as typeof globalThis & { __returnsplitDemoRuntime?: DemoRuntime };
-const RUNTIME_VERSION = "returnsplit-v5-provider-selection";
+const RUNTIME_VERSION = "returnsplit-v7-recovery-lifecycle";
+const PREFLIGHT_VALIDITY_MS = 5 * 60 * 1_000;
+const CASE_NOTE_MIN_LENGTH = 12;
+const CASE_NOTE_MAX_LENGTH = 500;
 
 function configuredProviderMode(): "demo" | "razorpay_test" {
   const configured = process.env.RETURNSPLIT_PROVIDER_MODE?.trim() || "demo";
@@ -102,6 +240,8 @@ function createDemoRuntime(): DemoRuntime {
     completedClaims: new Map(),
     claimOverrides: new Map(),
     escalations: new Map(),
+    escalationHistory: new Map(),
+    preflights: new Map(),
     sessionActivity: [],
     webhookInbox: new InMemoryWebhookInbox(),
   };
@@ -127,6 +267,38 @@ function issueFlag(issue: CalculationIssue): ReviewFlag {
 
 function activityId(prefix: string, requestId: string): string {
   return `${prefix}_${requestId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+}
+
+function normalizeCaseNote(note: string): string {
+  return note.trim().replace(/\s+/g, " ");
+}
+
+function redactCaseNote(note: string): string {
+  return normalizeCaseNote(note)
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[redacted email]")
+    .replace(/(?:\+?91[\s.-]?)?[6-9](?:[\s.-]?\d){9}\b/g, "[redacted phone]")
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[redacted IP address]")
+    .replace(/\b\d(?:[\s.-]?\d){9,18}\b/g, "[redacted number]");
+}
+
+function recordCaseNote(note: string, recordedAt: string): DemoCaseNote {
+  const normalized = normalizeCaseNote(note);
+  return {
+    recordedAt,
+    actor: "Priyanshu",
+    redactedText: redactCaseNote(normalized),
+    sha256: createHash("sha256").update(normalized, "utf8").digest("hex"),
+  };
+}
+
+function recoveryUpdateFingerprint(input: DemoRecoveryUpdateInput): string {
+  return createHash("sha256").update(JSON.stringify({
+    recoveredAmountPaise: input.recoveredAmountPaise,
+    writtenOffAmountPaise: input.writtenOffAmountPaise,
+    responsibleParty: input.responsibleParty,
+    note: normalizeCaseNote(input.note),
+    status: input.status,
+  }), "utf8").digest("hex");
 }
 
 export function getDemoRuntime(): DemoRuntime {
@@ -186,7 +358,9 @@ function projectSaga(claim: Claim, saga: ExecutionSaga): Claim {
         ...claim.review,
         state: "completed",
         headline: "Refund completed",
-        explanation: "Every required seller reversal was confirmed before the customer refund was created.",
+        explanation: saga.reversals.length > 0
+          ? "Every required seller reversal was confirmed before the customer refund was created."
+          : "No seller reversal was required; the marketplace-funded customer refund was confirmed.",
         flags: [],
       },
       execution,
@@ -264,7 +438,9 @@ export async function getDemoClaimView(claimId: string): Promise<Claim | undefin
       ...claim.review,
       state: "completed",
       headline: "Refund completed",
-      explanation: "Every required seller reversal was confirmed before the customer refund was created.",
+      explanation: completion.reversals.length > 0
+        ? "Every required seller reversal was confirmed before the customer refund was created."
+        : "No seller reversal was required; the marketplace-funded customer refund was confirmed.",
       flags: [],
     },
     execution: {
@@ -293,6 +469,93 @@ export function recordDemoClaimCompletion(claimId: string, completion: DemoCompl
 
 export function getDemoEscalation(claimId: string): DemoEscalation | undefined {
   return getDemoRuntime().escalations.get(claimId);
+}
+
+export function getDemoEscalationHistory(claimId: string): readonly DemoEscalation[] {
+  return getDemoRuntime().escalationHistory.get(claimId) ?? [];
+}
+
+function persistDemoEscalation(escalation: DemoEscalation): void {
+  const runtime = getDemoRuntime();
+  const history = runtime.escalationHistory.get(escalation.claimId) ?? [];
+  const existingIndex = history.findIndex((entry) => entry.caseId === escalation.caseId);
+  const nextHistory = existingIndex < 0
+    ? [...history, escalation]
+    : history.map((entry, index) => index === existingIndex ? escalation : entry);
+  runtime.escalations.set(escalation.claimId, escalation);
+  runtime.escalationHistory.set(escalation.claimId, nextHistory);
+}
+
+export function getDemoRecoveryCase(claimId: string): DemoRecoveryCase | undefined {
+  const escalation = getDemoEscalation(claimId);
+  return escalation?.kind === "recovery" ? escalation : undefined;
+}
+
+export function hasOpenDemoRecovery(claimId: string): boolean {
+  return getDemoRecoveryCase(claimId)?.status === "open";
+}
+
+export function getDemoPreflight(claimId: string): DemoPreflightRecord | undefined {
+  return getDemoRuntime().preflights.get(claimId);
+}
+
+export function recordDemoClaimPreflight({
+  claimId,
+  planFingerprint,
+  result,
+  requestId,
+  checkedAt = new Date(),
+}: {
+  claimId: string;
+  planFingerprint: string;
+  result: ProviderSnapshotVerification;
+  requestId: string;
+  checkedAt?: Date;
+}): DemoPreflightRecord {
+  const runtime = getDemoRuntime();
+  const claim = getDemoWorkflowClaim(claimId);
+  if (!claim?.decision || refundPlanFingerprint(claim.decision) !== planFingerprint) {
+    throw new Error("The preflight result does not match the current claim plan");
+  }
+  const checkedAtIso = checkedAt.toISOString();
+  const record: DemoPreflightRecord = {
+    claimId,
+    planFingerprint,
+    checkedAt: checkedAtIso,
+    expiresAt: new Date(checkedAt.getTime() + PREFLIGHT_VALIDITY_MS).toISOString(),
+    requestId,
+    providerMode: runtime.provider.mode,
+    outcome: result.outcome,
+    expectedPaymentRemainingPaise: claim.decision.providerSnapshot.remainingRefundablePaise,
+    expectedTransferRemainingPaise: claim.decision.sellerReversals.reduce((sum, entry) => sum + entry.remainingReversiblePaise, 0),
+    plannedRefundPaise: claim.decision.customerRefundPaise,
+    plannedReversalPaise: claim.decision.sellerFundedPaise,
+  };
+  runtime.preflights.set(claimId, record);
+  runtime.sessionActivity.push({
+    id: activityId("preflight", requestId),
+    type: "provider_snapshot_checked",
+    outcome: result.outcome === "verified" ? "success" : result.outcome === "mismatch" ? "danger" : "warning",
+    claimId,
+    orderId: claim.orderId,
+    occurredAt: checkedAtIso,
+    actor: "Priyanshu",
+    summary: result.outcome === "verified"
+      ? "Verified the current provider balances against the reviewed plan"
+      : result.outcome === "mismatch"
+        ? "Provider balances no longer match the reviewed plan"
+        : "Provider balances could not be verified",
+    requestId,
+    metadata: {
+      planFingerprint,
+      providerMode: runtime.provider.mode,
+      outcome: result.outcome,
+      plannedRefundPaise: record.plannedRefundPaise,
+      plannedReversalPaise: record.plannedReversalPaise,
+      expiresAt: record.expiresAt,
+    },
+  });
+  return record;
 }
 
 export function getDemoSessionActivity(): readonly ActivityEvent[] {
@@ -409,7 +672,14 @@ export function resolveDemoClaimReview(
 
   const openEvidenceCase = runtime.escalations.get(claim.id);
   if (openEvidenceCase?.kind === "evidence_request" && openEvidenceCase.status === "open") {
-    runtime.escalations.set(claim.id, { ...openEvidenceCase, status: "closed", closedAt: calculatedAt });
+    persistDemoEscalation({
+      ...openEvidenceCase,
+      status: "closed",
+      updatedAt: calculatedAt,
+      lastRequestId: requestId,
+      nextAction: "No further evidence action is required; the review decision has been recorded.",
+      closedAt: calculatedAt,
+    });
   }
 
   if (decision.kind === "liability" && decision.liability === "marketplace") {
@@ -418,16 +688,23 @@ export function resolveDemoClaimReview(
       claimId: claim.id,
       kind: "recovery",
       createdAt: calculatedAt,
+      updatedAt: calculatedAt,
       requestId,
+      lastRequestId: requestId,
       actor: "Priyanshu",
       queue: "recovery_operations",
       owner: "Recovery Operations",
       dueAt: new Date(now.getTime() + 48 * 60 * 60 * 1_000).toISOString(),
       status: "open",
       nextAction: "Confirm courier or seller responsibility and record the recovered or written-off amount.",
-      noteRecorded: true,
+      notes: [],
+      targetAmountPaise: nextClaim.decision?.marketplaceFundedPaise ?? 0,
+      recoveredAmountPaise: 0,
+      writtenOffAmountPaise: 0,
+      responsibleParty: "unresolved",
+      processedUpdateFingerprints: new Map(),
     };
-    runtime.escalations.set(claim.id, recoveryCase);
+    persistDemoEscalation(recoveryCase);
     runtime.sessionActivity.push({
       id: activityId("recovery", requestId),
       type: "manual_review_requested",
@@ -438,7 +715,12 @@ export function resolveDemoClaimReview(
       actor: recoveryCase.actor,
       summary: `Opened recovery case ${recoveryCase.caseId} after marketplace funding was selected`,
       requestId,
-      metadata: { caseId: recoveryCase.caseId, queue: recoveryCase.queue, dueAt: recoveryCase.dueAt },
+      metadata: {
+        caseId: recoveryCase.caseId,
+        queue: recoveryCase.queue,
+        dueAt: recoveryCase.dueAt,
+        targetAmountPaise: recoveryCase.targetAmountPaise,
+      },
     });
   }
 
@@ -463,6 +745,101 @@ export function resolveDemoClaimReview(
   return { claim: nextClaim, ...(planFingerprint ? { planFingerprint } : {}), event };
 }
 
+export function updateDemoRecoveryCase(
+  claimId: string,
+  requestId: string,
+  input: DemoRecoveryUpdateInput,
+  now = new Date(),
+): DemoRecoveryCase {
+  const runtime = getDemoRuntime();
+  const claim = getDemoWorkflowClaim(claimId);
+  if (!claim) throw new Error("Claim not found");
+  const existing = runtime.escalations.get(claimId);
+  if (!existing || existing.kind !== "recovery") throw new Error("This claim does not have a recovery case");
+  if (!runtime.completedClaims.has(claimId)) {
+    throw new Error("Recovery accounting can be updated only after the customer refund is complete");
+  }
+
+  const fingerprint = recoveryUpdateFingerprint(input);
+  const processedFingerprint = existing.processedUpdateFingerprints.get(requestId);
+  if (processedFingerprint) {
+    if (processedFingerprint === fingerprint) return existing;
+    throw new Error("This request ID has already been used for a different recovery update");
+  }
+  if (existing.requestId === requestId) throw new Error("This request ID was already used to open the recovery case");
+  if (existing.status === "closed") throw new Error("This recovery case is already closed");
+
+  const note = normalizeCaseNote(input.note);
+  if (note.length < CASE_NOTE_MIN_LENGTH || note.length > CASE_NOTE_MAX_LENGTH) {
+    throw new Error(`A recovery note between ${CASE_NOTE_MIN_LENGTH} and ${CASE_NOTE_MAX_LENGTH} characters is required`);
+  }
+  for (const [label, amount] of [
+    ["Recovered amount", input.recoveredAmountPaise],
+    ["Written-off amount", input.writtenOffAmountPaise],
+  ] as const) {
+    if (!Number.isSafeInteger(amount) || amount < 0) throw new Error(`${label} must be a non-negative integer number of paise`);
+  }
+  const accountedAmountPaise = input.recoveredAmountPaise + input.writtenOffAmountPaise;
+  if (!Number.isSafeInteger(accountedAmountPaise) || accountedAmountPaise > existing.targetAmountPaise) {
+    throw new Error("Recovered and written-off amounts cannot exceed the recovery target");
+  }
+  if (
+    input.recoveredAmountPaise < existing.recoveredAmountPaise
+    || input.writtenOffAmountPaise < existing.writtenOffAmountPaise
+  ) {
+    throw new Error("Recorded recovery and write-off totals cannot decrease");
+  }
+  const outstandingAmountPaise = existing.targetAmountPaise - accountedAmountPaise;
+  if (input.status === "closed" && outstandingAmountPaise !== 0) {
+    throw new Error("A recovery case can close only after the full target is recovered or written off");
+  }
+  if (input.status === "open" && outstandingAmountPaise === 0) {
+    throw new Error("A fully reconciled recovery case must be closed");
+  }
+
+  const updatedAt = now.toISOString();
+  const updated: DemoRecoveryCase = {
+    ...existing,
+    updatedAt,
+    lastRequestId: requestId,
+    status: input.status,
+    nextAction: input.status === "closed"
+      ? "No further recovery action is required; the marketplace-funded amount is fully reconciled."
+      : "Record additional recovery or write-off until the marketplace-funded amount is fully reconciled.",
+    notes: [...existing.notes, recordCaseNote(note, updatedAt)],
+    recoveredAmountPaise: input.recoveredAmountPaise,
+    writtenOffAmountPaise: input.writtenOffAmountPaise,
+    responsibleParty: input.responsibleParty,
+    processedUpdateFingerprints: new Map(existing.processedUpdateFingerprints).set(requestId, fingerprint),
+    ...(input.status === "closed" ? { closedAt: updatedAt } : {}),
+  };
+  persistDemoEscalation(updated);
+  const receipt = toDemoEscalationReceipt(updated, now);
+  runtime.sessionActivity.push({
+    id: activityId("recovery_update", requestId),
+    type: "recovery_updated",
+    outcome: updated.status === "closed" ? "success" : receipt.overdue ? "warning" : "info",
+    claimId,
+    orderId: claim.orderId,
+    occurredAt: updatedAt,
+    actor: "Priyanshu",
+    summary: updated.status === "closed"
+      ? `Closed recovery case ${updated.caseId} after fully reconciling the marketplace-funded amount`
+      : `Updated recovery case ${updated.caseId}; further recovery work remains open`,
+    requestId,
+    metadata: {
+      caseId: updated.caseId,
+      status: updated.status,
+      responsibleParty: updated.responsibleParty,
+      targetAmountPaise: updated.targetAmountPaise,
+      recoveredAmountPaise: updated.recoveredAmountPaise,
+      writtenOffAmountPaise: updated.writtenOffAmountPaise,
+      outstandingAmountPaise,
+    },
+  });
+  return updated;
+}
+
 export async function escalateDemoClaim(
   claimId: string,
   requestId: string,
@@ -472,7 +849,7 @@ export async function escalateDemoClaim(
   const runtime = getDemoRuntime();
   const existing = runtime.escalations.get(claimId);
   const kind = input.kind ?? "reconciliation";
-  if (existing) {
+  if (existing?.status === "open") {
     if (existing.kind !== kind) throw new Error("This claim already has a different open operations case");
     return existing;
   }
@@ -480,23 +857,32 @@ export async function escalateDemoClaim(
   if (!claim) throw new Error("Claim not found");
   const saga = await runtime.store.findByClaimId(claim.id);
   const terminalExecutionFailure = saga?.state === "failed" && [...saga.reversals, saga.refund].some((step) => step.status === "terminal_failure");
-  const rationale = input.rationale?.trim();
+  const normalizedRationale = input.rationale ? normalizeCaseNote(input.rationale) : "";
+  const rationale = normalizedRationale || undefined;
   if (kind === "evidence_request") {
     if (claim.status !== "needs_review") throw new Error("Only a claim awaiting review can request more evidence");
-    if (!rationale || rationale.length < 12 || rationale.length > 500) {
-      throw new Error("A rationale between 12 and 500 characters is required to request evidence");
+    if (!rationale || rationale.length < CASE_NOTE_MIN_LENGTH || rationale.length > CASE_NOTE_MAX_LENGTH) {
+      throw new Error(`A rationale between ${CASE_NOTE_MIN_LENGTH} and ${CASE_NOTE_MAX_LENGTH} characters is required to request evidence`);
     }
   } else if (claim.status !== "blocked" && !terminalExecutionFailure) {
     throw new Error("Only blocked or terminally failed claims can be escalated for reconciliation");
   }
   const createdAt = now.toISOString();
   const evidenceRequest = kind === "evidence_request";
+  const caseIdBase = `${evidenceRequest ? "evidence" : "recon"}_${claim.id.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const priorCaseIds = new Set(getDemoEscalationHistory(claim.id).map((entry) => entry.caseId));
+  let caseId = caseIdBase;
+  for (let sequence = 2; priorCaseIds.has(caseId); sequence += 1) {
+    caseId = `${caseIdBase}_${sequence}`;
+  }
   const escalation: DemoEscalation = {
-    caseId: `${evidenceRequest ? "evidence" : "recon"}_${claim.id.replace(/[^a-zA-Z0-9]/g, "_")}`,
+    caseId,
     claimId: claim.id,
     kind,
     createdAt,
+    updatedAt: createdAt,
     requestId,
+    lastRequestId: requestId,
     actor: "Priyanshu",
     queue: evidenceRequest ? "claims_review" : "payments_reconciliation",
     owner: evidenceRequest ? "Customer Support" : "Payments Operations",
@@ -505,10 +891,9 @@ export async function escalateDemoClaim(
     nextAction: evidenceRequest
       ? "Request a clear product-label photo, then return the claim for item matching."
       : "Confirm the provider ledger, correct the balance discrepancy, and recalculate before approval.",
-    noteRecorded: Boolean(rationale),
-    ...(rationale ? { rationaleSha256: createHash("sha256").update(rationale, "utf8").digest("hex") } : {}),
+    notes: rationale ? [recordCaseNote(rationale, createdAt)] : [],
   };
-  runtime.escalations.set(claim.id, escalation);
+  persistDemoEscalation(escalation);
   if (evidenceRequest) {
     runtime.claimOverrides.set(claim.id, {
       ...claim,

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import nextConfig from "../next.config";
 import { POST as escalateClaim } from "../src/app/api/claims/[id]/escalate/route";
+import { POST as updateRecovery } from "../src/app/api/claims/[id]/recovery/route";
 import { POST as resetDemo } from "../src/app/api/demo/reset/route";
 import { POST as receiveRazorpayWebhook } from "../src/app/api/webhooks/razorpay/route";
 import {
@@ -74,9 +75,22 @@ test("mutation and webhook routes return 413 without accepting oversized bodies"
   const escalationResponse = await escalateClaim(postRequest(
     "http://localhost/api/claims/RET-260903-038/escalate",
     "http://localhost",
-    "{}",
+    JSON.stringify({ kind: "evidence_request", rationale: "x".repeat(MAX_MUTATION_BODY_BYTES) }),
   ), { params: Promise.resolve({ id: "RET-260903-038" }) });
   assert.equal(escalationResponse.status, 413);
+
+  const recoveryResponse = await updateRecovery(postRequest(
+    "http://localhost/api/claims/RET-260903-035/recovery",
+    "http://localhost",
+    JSON.stringify({
+      recoveredAmountPaise: 0,
+      writtenOffAmountPaise: 0,
+      responsibleParty: "courier",
+      note: "x".repeat(MAX_MUTATION_BODY_BYTES),
+      status: "open",
+    }),
+  ), { params: Promise.resolve({ id: "RET-260903-035" }) });
+  assert.equal(recoveryResponse.status, 413);
 
   const webhookResponse = await receiveRazorpayWebhook(postRequest(
     "http://localhost/api/webhooks/razorpay",
@@ -84,6 +98,21 @@ test("mutation and webhook routes return 413 without accepting oversized bodies"
     JSON.stringify({ padding: "x".repeat(MAX_WEBHOOK_BODY_BYTES) }),
   ));
   assert.equal(webhookResponse.status, 413);
+});
+
+test("recovery mutations reject requests without a verifiable same-origin context", async () => {
+  const response = await updateRecovery(new Request("http://localhost/api/claims/RET-260903-035/recovery", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      recoveredAmountPaise: 0,
+      writtenOffAmountPaise: 0,
+      responsibleParty: "courier",
+      note: "A sufficiently long recovery note.",
+      status: "open",
+    }),
+  }), { params: Promise.resolve({ id: "RET-260903-035" }) });
+  assert.equal(response.status, 403);
 });
 
 test("global responses receive browser hardening and APIs are non-cacheable", async () => {

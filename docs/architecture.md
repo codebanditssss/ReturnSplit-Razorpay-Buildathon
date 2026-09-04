@@ -10,6 +10,13 @@ ReturnSplit separates three jobs:
 
 No claim text, model output, browser state, or client-provided amount crosses directly into a payment request.
 
+TimesFM is the only model required by this prototype. Small classifiers,
+embedding/reranking models, Whisper, and a local generative model are deferred
+until production inputs create a measured need for them. Evidence extraction is
+a replaceable, untrusted boundary; the showcased extraction records are static
+fixtures. Operator-note redaction is deterministic so it remains reproducible
+and testable.
+
 The claim-detail server component projects domain records into a narrow browser
 view model. Customer email, linked-account IDs, and raw provider payment and
 transfer IDs remain server-side; the operator UI receives only the fields it
@@ -20,15 +27,30 @@ substitute for production authentication and tenant isolation.
 
 ```text
 needs_review ──human resolution──▶ ready_for_approval
+      │                 ▲
+      └─ evidence case ─┘
 ready_for_approval ──approval──▶ processing ──confirmed──▶ completed
                        │              ├─ retryable failure / unknown result
                        │              └─ terminal failure requiring manual action
                        └─ failed safety check──▶ blocked
 ```
 
-`rejection`, `cancellation`, `completed_with_exposure`, and reservation release
-are not implemented in this prototype. A production workflow must add them
-before operators can close or abandon a non-executed claim.
+Evidence cases record an owner, due time, next action, a deterministically
+redacted rationale, and its digest; completing the review closes that case.
+Choosing marketplace funding for uncertain courier/seller responsibility opens
+a separate recovery case. That ledger records the recovery target, cumulative
+recovered and written-off paise, responsible party, redacted operator note,
+aging, and explicit closure. It remains open after the customer refund completes
+and remains visible in the work queue until the target is fully accounted for.
+`rejection`, `cancellation`, and reservation release are not implemented in
+this prototype. A production workflow must add them before operators can abandon
+a non-executed claim.
+
+Recovery updates use `POST /api/claims/[id]/recovery` with cumulative integer-
+paise recovered and written-off totals, a responsible party, operator note, and
+an explicit open/closed state. Totals are monotonic and cannot exceed the frozen
+marketplace-funded target. Closure fails unless the complete target is
+accounted for, and request IDs are idempotent only for an identical update.
 
 ## Implemented execution-saga state model
 
@@ -43,10 +65,14 @@ approved → reversing_transfers → refunding_payment → completed
 A network timeout is an unknown result, never proof of failure. For Route reversal, ReturnSplit records a stable operation receipt in notes and checks the transfer reversal collection before deciding whether a request can be retried. Refund retries reuse `X-Refund-Idempotency` with an identical body.
 
 Before a new saga is inserted, the provider adapter fetches the current payment
-and every transfer required by the plan. Their remaining refundable and
-reversible balances must exactly match the snapshot bound into the plan. The
+and every transfer required by the plan. Payment amount and refunded amount,
+plus each transfer's source payment, recipient linked account, status, original
+amount, and reversed amount must match the server-side order and approved
+snapshot—not merely produce the same remaining balance. The
 operator also performs this check explicitly before the approval control is
-shown; the execution endpoint repeats it to close the client-to-server gap.
+shown; that standalone result is retained against the plan fingerprint for five
+minutes and appears in activity/audit history. The execution endpoint repeats
+the check to close the client-to-server gap.
 Existing sagas do not rerun this initial check because their own confirmed
 movements have necessarily changed those balances; they resume through the
 step-level reconciliation rules above.
@@ -56,8 +82,8 @@ step-level reconciliation rules above.
 The claim workbench can download a JSON audit bundle generated on demand by an
 explicit allowlist. It includes claim and order references, evidence hashes,
 the frozen policy and money plan, the plan fingerprint, approval and execution
-state, allowlisted saga-event fields, masked provider references, and any
-payments-reconciliation escalation. Customer contact details, raw claim text,
+state, allowlisted saga-event fields, masked provider references, and the ordered
+history of evidence, reconciliation, and recovery cases. Customer contact details, raw claim text,
 raw evidence excerpts, linked-account IDs, raw payment and transfer IDs,
 provider receipts, idempotency keys, credentials, and arbitrary provider or
 audit metadata are omitted.
@@ -72,6 +98,6 @@ Mode transaction.
 
 ## Forecast boundary
 
-TimesFM receives only aggregated daily time series such as approved refund paise, seller-recoverable paise, claim count, and processing delay. Its quantiles support treasury reserves and staffing. Forecast output cannot affect claim eligibility, liable party, transfer selection, or exact monetary execution.
+TimesFM receives only aggregated daily time series such as approved refund paise, seller-recoverable paise, claim count, and processing delay. Its quantiles support treasury reserves and staffing. The reserve view adds forecasted new demand to the current open queue once, deducting only executable seller reversals and reserving blocked, terminal-failure, and provider-unknown claims in full. Forecast output cannot affect claim eligibility, liable party, transfer selection, or exact monetary execution.
 
 The Next.js server calls a separately deployed Python inference endpoint. If unavailable, the page returns a deterministic seasonal baseline with an explicit label. This keeps the user interface available without pretending a foundation model ran.

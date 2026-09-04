@@ -29,6 +29,41 @@ test("reserve exposure counts executable recoveries and reserves blocked claims 
   );
 });
 
+test("reserve exposure does not deduct reversals for terminal or provider-unknown execution", () => {
+  const ready = getClaimById("RET-260903-031");
+  assert.ok(ready?.decision);
+
+  const terminal = {
+    ...ready,
+    status: "processing" as const,
+    execution: {
+      sagaId: "saga_terminal",
+      state: "failed" as const,
+      canResume: false,
+      pendingOperation: "transfer_reversal" as const,
+    },
+  };
+  const providerUnknown = {
+    ...ready,
+    status: "processing" as const,
+    execution: {
+      sagaId: "saga_unknown",
+      state: "reversal_result_unknown" as const,
+      requiresReconciliation: true,
+      pendingOperation: "transfer_reversal" as const,
+    },
+  };
+
+  const exposure = summarizeOpenRefundExposure([terminal, providerUnknown]);
+
+  assert.equal(exposure.pricedClaimCount, 2);
+  assert.equal(exposure.blockedClaimCount, 2);
+  assert.equal(exposure.expectedSellerReversalPaise, 0);
+  assert.equal(exposure.marketplaceFundedCommitmentPaise, 0);
+  assert.equal(exposure.blockedAtRiskPaise, ready.decision.customerRefundPaise * 2);
+  assert.equal(exposure.knownReserveCommitmentPaise, ready.decision.customerRefundPaise * 2);
+});
+
 test("reserve assessment adds the open commitment exactly once", () => {
   const forecast = buildFallbackForecast(7);
   const baseline = assessRefundReserve(forecast, Number.MAX_SAFE_INTEGER);

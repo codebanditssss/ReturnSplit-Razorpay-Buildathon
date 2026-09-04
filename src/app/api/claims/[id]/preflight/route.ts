@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getOrderById } from "@/lib/data";
 import { refundPlanFingerprint, verifyRefundPlanProviderSnapshot } from "@/lib/execution-saga";
-import { getDemoRuntime, getDemoWorkflowClaim } from "@/server/demo-runtime";
+import { getDemoRuntime, getDemoWorkflowClaim, recordDemoClaimPreflight } from "@/server/demo-runtime";
 import { MAX_MUTATION_BODY_BYTES, readBoundedJson, RequestBodyError } from "@/server/http-request";
-import { isSameOriginMutation } from "@/server/mutation-request";
+import { isSameOriginMutation, mutationRequestId } from "@/server/mutation-request";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -45,12 +45,24 @@ export async function POST(request: Request, { params }: RouteContext) {
   }
 
   const result = await verifyRefundPlanProviderSnapshot(claim.decision, order, provider);
-  const checkedAt = new Date().toISOString();
+  const record = recordDemoClaimPreflight({
+    claimId: claim.id,
+    planFingerprint: expectedPlanFingerprint,
+    result,
+    requestId: mutationRequestId(request, "preflight"),
+  });
   if (result.outcome === "verified") {
-    return NextResponse.json({ status: "verified", checkedAt, providerMode: provider.mode });
+    return NextResponse.json({
+      status: "verified",
+      checkedAt: record.checkedAt,
+      expiresAt: record.expiresAt,
+      providerMode: provider.mode,
+      expectedPaymentRemainingPaise: record.expectedPaymentRemainingPaise,
+      expectedTransferRemainingPaise: record.expectedTransferRemainingPaise,
+    });
   }
   return NextResponse.json(
-    { status: result.outcome, checkedAt, error: result.message },
+    { status: result.outcome, checkedAt: record.checkedAt, expiresAt: record.expiresAt, error: result.message },
     { status: result.outcome === "mismatch" ? 409 : 503 },
   );
 }

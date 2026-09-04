@@ -152,10 +152,12 @@ Say:
 > “The order has two linen-shirt variants and the evidence does not distinguish
 > them. ReturnSplit abstains instead of charging a guessed seller.”
 
-Choose either exact order variant and click **Confirm item and recalculate**.
-Show that the decision persists, the real paise engine runs again, and a new
-fingerprint-bound plan becomes ready for approval. This demonstrates the
-human-in-the-loop transition rather than a client-only success message.
+First expand **Cannot determine from this evidence**. Explain that an operator
+can record why the evidence is insufficient and open an owned, due-dated
+customer-evidence request instead of guessing. For the main run, choose either
+exact order variant and click **Confirm item and recalculate**. Show that the
+decision persists, the real paise engine runs again, and a new
+fingerprint-bound plan becomes ready for approval.
 
 Then open <http://localhost:3000/claims/RET-260903-038>.
 
@@ -164,9 +166,9 @@ Say:
 > “This transfer has only ₹49.15 left to reverse, so approval is blocked. A
 > confident item match does not override provider balance.”
 
-Click **Escalate to payments ops** and show the persisted reconciliation case.
-Approval remains unavailable; escalation records work instead of bypassing the
-balance check.
+Click **Escalate to payments ops** and show the persisted reconciliation case,
+owner, due time, and next action. Approval remains unavailable; escalation
+records work instead of bypassing the balance check.
 
 ### 2:25–3:00 — Show safe recovery
 
@@ -205,7 +207,9 @@ If a judge asks for reproducibility, show `pnpm eval:batch` and
 
 ### 3:35–4:10 — Show cash planning without crossing the control boundary
 
-Open <http://localhost:3000/risk> and switch between 7, 14, and 30 days.
+Open <http://localhost:3000/risk> and switch between 7, 14, and 30 days. Point
+out the available reserve, priced open commitment, blocked exposure, unpriced
+claim count, and the resulting headroom or top-up recommendation.
 
 Read the source badge before speaking:
 
@@ -220,9 +224,22 @@ Say:
 > whether a claim is eligible, who is liable, which transfer to reverse, or what
 > amount to move.”
 
+Add that current open claims are included once outside the forecast, while the
+forecast represents new authorizations after the history cutoff.
+
 Do not claim production forecast accuracy. The checked-in evidence is a strict
 rolling-origin backtest on synthetic history; no representative production
 backtest or calibration exists.
+
+### Optional — Show the recovery ledger
+
+Reset to **Liability decision**, front the refund from Mora Market, and complete
+the zero-reversal refund. The completed claim stays in the Open and Recovery
+queues because customer settlement and marketplace recovery are separate facts.
+On the claim, record a partial courier recovery, then allocate the remaining
+target to write-off and close it. Point out the cumulative paise controls,
+responsible party, redacted note history, due/age state, and the queue transition
+from Recovery (1) to Recovery (0).
 
 ### 4:10–4:30 — Close
 

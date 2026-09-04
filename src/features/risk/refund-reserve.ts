@@ -113,11 +113,12 @@ export function assessRefundReserve(
 /**
  * Converts the current claim queue into a conservative reserve commitment.
  * Executable claims contribute their marketplace-funded portion after planned
- * seller reversals. Blocked claims contribute their full customer refund,
- * because recovery is not dependable while the exception remains unresolved.
+ * seller reversals. Claims that are blocked, terminally failed, or waiting on
+ * an unknown provider result contribute their full customer refund because
+ * seller recovery is not currently dependable.
  */
 export function summarizeOpenRefundExposure(
-  claims: ReadonlyArray<Pick<Claim, "status" | "decision">>,
+  claims: ReadonlyArray<Pick<Claim, "status" | "decision" | "execution">>,
 ): OpenRefundExposure {
   let pricedClaimCount = 0;
   let unpricedClaimCount = 0;
@@ -136,7 +137,12 @@ export function summarizeOpenRefundExposure(
 
     pricedClaimCount += 1;
     customerRefundPaise = addPaise(customerRefundPaise, claim.decision.customerRefundPaise);
-    if (claim.status === "blocked") {
+    const executionIsUncertain = claim.execution?.requiresReconciliation === true
+      || claim.execution?.state === "reversal_result_unknown"
+      || claim.execution?.state === "refund_result_unknown";
+    const executionIsTerminal = claim.execution?.state === "failed"
+      && claim.execution.canResume !== true;
+    if (claim.status === "blocked" || executionIsUncertain || executionIsTerminal) {
       blockedClaimCount += 1;
       blockedAtRiskPaise = addPaise(blockedAtRiskPaise, claim.decision.customerRefundPaise);
       continue;

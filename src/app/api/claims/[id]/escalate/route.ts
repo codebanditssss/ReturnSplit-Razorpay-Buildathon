@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { escalateDemoClaim, type DemoEscalationInput } from "@/server/demo-runtime";
+import { escalateDemoClaim, toDemoEscalationReceipt, type DemoEscalationInput } from "@/server/demo-runtime";
 import { MAX_MUTATION_BODY_BYTES, readBoundedJson, RequestBodyError } from "@/server/http-request";
 import { isSameOriginMutation, mutationRequestId } from "@/server/mutation-request";
 
@@ -26,7 +26,8 @@ export async function POST(request: Request, { params }: RouteContext) {
   }
   const { id } = await params;
   try {
-    return NextResponse.json(await escalateDemoClaim(id, mutationRequestId(request, "escalate"), input));
+    const escalation = await escalateDemoClaim(id, mutationRequestId(request, "escalate"), input);
+    return NextResponse.json(toDemoEscalationReceipt(escalation));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Escalation could not be created";
     return NextResponse.json({ error: message }, { status: message === "Claim not found" ? 404 : 409 });
