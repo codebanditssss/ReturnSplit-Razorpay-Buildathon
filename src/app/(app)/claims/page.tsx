@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClaimsTable, type ClaimRow } from "@/components/claims-table";
 import { Money, PageHeader } from "@/components/ui";
+import { Mascot } from "@/components/mascot";
 import { SyncProviderButton } from "@/components/sync-provider-button";
 import { claimOperationPresentation } from "@/lib/claim-operation-presentation";
 import { getDemoClaimsView, getProviderIdentity } from "@/server/demo-runtime";
@@ -40,9 +41,22 @@ export default async function ClaimsPage() {
     ...(claim.execution ? { execution: claim.execution } : {}),
   }));
 
+  const balanced = attention === 0;
+
   return (
     <div className="page">
       <PageHeader title="Claims" description="Review who funds each approved return before money moves." actions={<SyncProviderButton />} />
+      <section className="welcome-card" aria-label="Queue summary">
+        <div className="welcome-copy">
+          <p className="eyebrow">Operator overview</p>
+          <h2>{balanced ? "Every open claim is balanced." : `${attention} claim${attention === 1 ? "" : "s"} need${attention === 1 ? "s" : ""} a look.`}</h2>
+          <p>
+            <strong>{ready}</strong> ready to approve · <strong>{open.length}</strong> open across 4 return states.
+            Reversals stay behind human approval - nothing moves until you say so.
+          </p>
+        </div>
+        <div className="welcome-mascot"><Mascot /></div>
+      </section>
       <section className="metric-strip" aria-label="Queue overview">
         <div className="metric"><span className="metric-label">Open claims</span><strong className="metric-value">{open.length}</strong><span className="metric-note">Across 4 return states</span></div>
         <div className="metric"><span className="metric-label">Ready to approve</span><strong className="metric-value">{ready}</strong><span className="metric-note good">Calculation ready · balance check pending</span></div>
