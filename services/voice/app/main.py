@@ -42,7 +42,7 @@ logging.basicConfig(
 logger = logging.getLogger("voice-lab")
 
 SERVICE_NAME = "Voice Lab"
-SERVICE_VERSION = "1.3.4"
+SERVICE_VERSION = "1.4.0"
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_ROOT = Path(__file__).resolve().parent / "static"
 
@@ -68,7 +68,7 @@ STT_REALTIME_WORKERS = int(os.getenv("STT_REALTIME_WORKERS", "2"))
 TTS_MODEL_PATH = os.getenv("TTS_MODEL_PATH", str(ROOT / "models" / "kokoro-v1.0.onnx"))
 TTS_VOICES_PATH = os.getenv("TTS_VOICES_PATH", str(ROOT / "models" / "voices-v1.0.bin"))
 TTS_CPU_THREADS = int(os.getenv("TTS_CPU_THREADS", "4"))
-TTS_WORKERS = int(os.getenv("TTS_WORKERS", "1"))
+TTS_WORKERS = int(os.getenv("TTS_WORKERS", "2"))
 
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(100 * 1024 * 1024)))
 MAX_STREAM_SECONDS = int(os.getenv("MAX_STREAM_SECONDS", "600"))
@@ -76,7 +76,12 @@ MAX_TTS_CHARACTERS = int(os.getenv("MAX_TTS_CHARACTERS", "5000"))
 PARTIAL_WINDOW_SECONDS = int(os.getenv("PARTIAL_WINDOW_SECONDS", "8"))
 LIVE_COMMIT_LAG_WORDS = int(os.getenv("LIVE_COMMIT_LAG_WORDS", "2"))
 LIVE_COMMIT_DELAY_SECONDS = float(os.getenv("LIVE_COMMIT_DELAY_SECONDS", "3.0"))
-TTS_CHUNK_CHARACTERS = int(os.getenv("TTS_CHUNK_CHARACTERS", "260"))
+TTS_FIRST_CHUNK_CHARACTERS = int(os.getenv("TTS_FIRST_CHUNK_CHARACTERS", "64"))
+TTS_CHUNK_CHARACTERS = int(os.getenv("TTS_CHUNK_CHARACTERS", "200"))
+TTS_FADE_MILLISECONDS = float(os.getenv("TTS_FADE_MILLISECONDS", "8"))
+TTS_INTER_CHUNK_SILENCE_MS = float(
+    os.getenv("TTS_INTER_CHUNK_SILENCE_MS", "20")
+)
 
 VOICE_LANGUAGES = {
     "a": ("en-us", "English (US)"),
@@ -414,9 +419,23 @@ def _transcribe_sync(
 
     processing_seconds = time.perf_counter() - started
     duration = float(getattr(info, "duration", 0.0) or 0.0)
+    text = "".join(text_parts).strip()
+    speech_detected = bool(text and rendered_segments)
+    no_speech_reason = None
+    if not speech_detected:
+        if vad_filter and duration > 0 and float(info.duration_after_vad) < 0.05:
+            no_speech_reason = (
+                "Silence detection found no audible speech. The recording may be "
+                "silent, too quiet, or contain an unsupported audio track."
+            )
+        else:
+            no_speech_reason = "The model did not detect any spoken words."
+
     return {
         "id": f"stt_{uuid.uuid4().hex[:16]}",
-        "text": "".join(text_parts).strip(),
+        "text": text,
+        "speechDetected": speech_detected,
+        "noSpeechReason": no_speech_reason,
         "language": info.language,
         "languageProbability": round(float(info.language_probability), 5),
         "durationSeconds": round(duration, 3),
@@ -463,34 +482,80 @@ async def _transcribe(
 
 
 def _split_tts_text(text: str) -> list[str]:
-    """Keep Kokoro near its best prosody range and reduce WS time-to-first-audio."""
-    sentences = [piece.strip() for piece in re.split(r"(?<=[.!?;:])\s+|\n+", text)]
-    sentences = [piece for piece in sentences if piece]
+    """Create a short first chunk, then larger chunks at natural boundaries."""
+    remaining = re.sub(r"\s+", " ", text).strip()
+    if not remaining:
+        return [text]
+
     chunks: list[str] = []
-    current = ""
-    for sentence in sentences:
-        words = sentence.split()
-        pieces: list[str] = []
-        while words:
-            piece_words: list[str] = []
-            size = 0
-            while words and (
-                not piece_words or size + len(words[0]) + 1 <= TTS_CHUNK_CHARACTERS
-            ):
-                word = words.pop(0)
-                piece_words.append(word)
-                size += len(word) + 1
-            pieces.append(" ".join(piece_words))
-        for piece in pieces:
-            candidate = f"{current} {piece}".strip()
-            if current and len(candidate) > TTS_CHUNK_CHARACTERS:
-                chunks.append(current)
-                current = piece
-            else:
-                current = candidate
-    if current:
-        chunks.append(current)
-    return chunks or [text]
+    while remaining:
+        limit = (
+            TTS_FIRST_CHUNK_CHARACTERS if not chunks else TTS_CHUNK_CHARACTERS
+        )
+        if len(remaining) <= limit:
+            chunks.append(remaining)
+            break
+
+        window = remaining[: limit + 1]
+        minimum_natural_break = max(24, round(limit * 0.35))
+        all_natural_breaks = [
+            match.end()
+            for match in re.finditer(r"[.!?;:,](?:[\"')\]]*)\s+", window)
+        ]
+        preferred_breaks = [
+            boundary
+            for boundary in all_natural_breaks
+            if boundary >= minimum_natural_break
+        ]
+        natural_breaks = preferred_breaks or [
+            boundary for boundary in all_natural_breaks if boundary >= 12
+        ]
+        boundary = natural_breaks[-1] if natural_breaks else window.rfind(" ")
+        if boundary <= 0:
+            boundary = limit
+
+        # Avoid handing Kokoro a tiny final fragment when an even split is cleaner.
+        tail_length = len(remaining) - boundary
+        if tail_length < 32 and len(remaining) <= limit + 32:
+            midpoint = len(remaining) // 2
+            balanced = remaining.rfind(" ", minimum_natural_break, midpoint + 1)
+            if balanced > 0:
+                boundary = balanced
+
+        chunk = remaining[:boundary].strip()
+        if not chunk:
+            boundary = min(limit, len(remaining))
+            chunk = remaining[:boundary]
+        chunks.append(chunk)
+        remaining = remaining[boundary:].strip()
+    return chunks
+
+
+def _prepare_tts_samples(samples: np.ndarray, sample_rate: int) -> np.ndarray:
+    """Sanitize model output and bring each streamed edge cleanly to zero."""
+    clean = np.asarray(samples, dtype=np.float32).reshape(-1).copy()
+    if clean.size == 0:
+        return clean
+
+    np.nan_to_num(clean, copy=False, nan=0.0, posinf=1.0, neginf=-1.0)
+    clean -= np.float32(np.mean(clean, dtype=np.float64))
+
+    fade_samples = min(
+        round(sample_rate * TTS_FADE_MILLISECONDS / 1000), clean.size // 2
+    )
+    if fade_samples:
+        phase = np.linspace(0.0, np.pi / 2, fade_samples, dtype=np.float32)
+        fade = np.sin(phase) ** 2
+        clean[:fade_samples] *= fade
+        clean[-fade_samples:] *= fade[::-1]
+
+    return np.clip(clean, -1.0, 1.0, out=clean)
+
+
+def _tts_pause(sample_rate: int) -> np.ndarray:
+    return np.zeros(
+        round(sample_rate * TTS_INTER_CHUNK_SILENCE_MS / 1000), dtype=np.float32
+    )
 
 
 def _synthesize_chunk_sync(
@@ -501,7 +566,7 @@ def _synthesize_chunk_sync(
     g2p = models.g2p_gb if language == "en-gb" else models.g2p_us
     if language in {"en-us", "en-gb"} and g2p is not None:
         phonemes, _ = g2p(text)
-        return models.tts.create(
+        samples, sample_rate = models.tts.create(
             phonemes,
             voice=voice,
             speed=speed,
@@ -509,13 +574,15 @@ def _synthesize_chunk_sync(
             is_phonemes=True,
             trim=True,
         )
-    return models.tts.create(
-        text,
-        voice=voice,
-        speed=speed,
-        lang=language,
-        trim=True,
-    )
+    else:
+        samples, sample_rate = models.tts.create(
+            text,
+            voice=voice,
+            speed=speed,
+            lang=language,
+            trim=True,
+        )
+    return _prepare_tts_samples(samples, sample_rate), sample_rate
 
 
 def _synthesize_sync(request: SpeechRequest) -> tuple[np.ndarray, int, str]:
@@ -535,7 +602,7 @@ def _synthesize_sync(request: SpeechRequest) -> tuple[np.ndarray, int, str]:
         )
         audio_parts.append(samples)
         if index < len(chunks) - 1:
-            audio_parts.append(np.zeros(round(sample_rate * 0.08), dtype=np.float32))
+            audio_parts.append(_tts_pause(sample_rate))
     return np.concatenate(audio_parts), sample_rate, language
 
 
@@ -1096,10 +1163,7 @@ async def text_to_speech_socket(websocket: WebSocket) -> None:
                     )
                     if index < len(text_chunks) - 1:
                         samples = np.concatenate(
-                            [
-                                samples,
-                                np.zeros(round(sample_rate * 0.08), dtype=np.float32),
-                            ]
+                            [samples, _tts_pause(sample_rate)]
                         )
                     sample_count += len(samples)
                     if first_audio_ms is None:

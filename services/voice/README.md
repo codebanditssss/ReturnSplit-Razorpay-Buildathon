@@ -12,8 +12,8 @@ Self-hosted speech-to-text and text-to-speech for the dedicated Upstash Box
   `small` for auto-detection or other languages, CPU INT8, beam size 1.
 - Studio STT: Faster Whisper `large-v3-turbo`, CPU INT8, beam size 3. Opt in
   with `quality=accurate` when latency matters less than difficult-audio quality.
-- TTS: Kokoro-82M v1.0 full-precision ONNX with Misaki English G2P and
-  prosody-aware text chunking, producing 24 kHz mono output.
+- TTS: Kokoro-82M v1.0 full-precision ONNX with Misaki English G2P,
+  low-latency first-chunk streaming, and de-clicked 24 kHz mono output.
 - Runtime: one Uvicorn worker on an 8 vCPU / 16 GB Large keep-alive Box.
 
 The browser captures device-native PCM (normally 44.1 or 48 kHz) and the server
@@ -81,7 +81,7 @@ the realtime model.
 ## Concurrency
 
 The default single-process scheduler admits two live preview decodes, two
-realtime final transcriptions, one Studio transcription, and one TTS generation
+realtime final transcriptions, one Studio transcription, and two TTS generations
 at a time. Additional requests wait rather than starting enough CPU work to
 destroy latency. These are inference slots, not connection limits; scale across
 multiple Boxes for sustained public traffic.

@@ -1,6 +1,13 @@
 import unittest
 
-from app.main import LiveTranscriptState, SpeechRequest, SttSocketConfig, _split_tts_text
+import numpy as np
+from app.main import (
+    LiveTranscriptState,
+    SpeechRequest,
+    SttSocketConfig,
+    _prepare_tts_samples,
+    _split_tts_text,
+)
 
 
 class MainHelperTests(unittest.TestCase):
@@ -57,7 +64,28 @@ class MainHelperTests(unittest.TestCase):
         text = " ".join(["A realistic sentence with useful punctuation."] * 30)
         chunks = _split_tts_text(text)
         self.assertGreater(len(chunks), 1)
-        self.assertTrue(all(len(chunk) <= 260 for chunk in chunks))
+        self.assertLessEqual(len(chunks[0]), 64)
+        self.assertTrue(all(len(chunk) <= 200 for chunk in chunks[1:]))
+        self.assertEqual(" ".join(chunks), text)
+
+    def test_tts_short_first_chunk_uses_natural_boundary(self) -> None:
+        text = (
+            "Hello from Voice Lab. This opening audio should arrive quickly while "
+            "the rest of this longer passage continues rendering in the background."
+        )
+        chunks = _split_tts_text(text)
+        self.assertEqual(chunks[0], "Hello from Voice Lab.")
+        self.assertEqual(" ".join(chunks), text)
+
+    def test_tts_audio_cleanup_removes_invalid_values_and_clicks(self) -> None:
+        samples = np.array(
+            [np.nan, np.inf, -np.inf, 0.4, -0.2, 0.3] * 100, dtype=np.float32
+        )
+        cleaned = _prepare_tts_samples(samples, 24_000)
+        self.assertTrue(np.isfinite(cleaned).all())
+        self.assertAlmostEqual(float(cleaned[0]), 0.0, places=6)
+        self.assertAlmostEqual(float(cleaned[-1]), 0.0, places=6)
+        self.assertLessEqual(float(np.max(np.abs(cleaned))), 1.0)
 
 
 if __name__ == "__main__":
