@@ -148,14 +148,14 @@ const RIBBON: string[] = [
   "Right transfer, every time",
 ];
 
-/* ---------- fanned control-surface cards (refs: Aeline floating arc + Rooms glass) ---------- */
-type FanCard = { tag: string; tone: string; ico: React.ReactNode; title: React.ReactNode; body: React.ReactNode; foot: React.ReactNode };
-const FAN: FanCard[] = [
-  { tag: "Evidence", tone: "blue", ico: I.inbox, title: "RET-260903-031", body: <>Order <b>MM-18472</b> · Aavya + Noya</>, foot: <><span className="lp-ava-stack"><i /><i /></span>2 sellers</> },
-  { tag: "Split", tone: "gold", ico: I.calc, title: "Per-seller paise", body: <>₹1,979.26 <span className="lp-fcard-sep">·</span> ₹349.28</>, foot: <>{I.check} integer-paise</> },
-  { tag: "Reverse", tone: "green", ico: I.refresh, title: "₹1,979.26", body: <>&rarr; Aavya Textiles</>, foot: <>acc_demo_aavya</> },
-  { tag: "Approve", tone: "green", ico: I.lock, title: "Maker-checker", body: <>signed · fingerprint bound</>, foot: <><span className="lp-ava-stack"><i /></span>operator</> },
-  { tag: "Reconcile", tone: "green", ico: I.scroll, title: "Balanced", body: <>Σ reversals + platform = refund</>, foot: <>{I.check} 0 wrong-seller</> },
+/* ---------- control-surface states (one real claim, RET-260903-031) ---------- */
+type SurfaceStep = { tag: string; tone: string; title: string; body: React.ReactNode };
+const STEPS: SurfaceStep[] = [
+  { tag: "Evidence", tone: "blue", title: "Return logged", body: <>Order <b>MM-18472</b> · 2 items across Aavya + Noya · photos and reason attached.</> },
+  { tag: "Split", tone: "gold", title: "Refund apportioned", body: <><b>₹2,328.54</b> refund resolves to <b>₹1,979.26</b> seller reversal + <b>₹349.28</b> platform contribution, in integer paise.</> },
+  { tag: "Reverse", tone: "green", title: "Route reversal drafted", body: <><b>₹1,979.26</b> to Aavya Textiles (acc_demo_aavya) with an idempotency key set before submission.</> },
+  { tag: "Approve", tone: "green", title: "Maker-checker held", body: <>Nothing moves until an operator signs off; the request fingerprint is bound to that approval.</> },
+  { tag: "Reconcile", tone: "green", title: "Balanced and closed", body: <>Σ seller reversals + platform contribution = customer refund · 0 wrong-seller · settled in 0.42s.</> },
 ];
 
 /* ---------- hero product panel: faithful mini-workbench ---------- */
@@ -418,7 +418,7 @@ export function Landing() {
         </div>
       </div>
 
-      {/* control surface - fanned floating cards */}
+      {/* control surface - one framed audit panel */}
       <section className="lp-section lp-fan-sec" id="surface">
         <div className="lp-wrap">
           <Reveal>
@@ -426,25 +426,32 @@ export function Landing() {
               <span className="lp-eyebrow sq">The control surface <span className="lp-spark">✳</span></span>
               <h2>One claim, five states, nothing hidden.</h2>
               <p>Every partial return moves through the same auditable surface - evidence, split,
-                reversal, approval, reconciliation. Here it is, mid-flight.</p>
+                reversal, approval, reconciliation. Here is claim RET-260903-031, start to close.</p>
             </div>
           </Reveal>
           <Reveal>
-            <div className="lp-fan">
-              <div className="lp-fan-toast"><span className="lp-fan-dot" />Reversal confirmed · 0.42s <b>idempotent</b></div>
-              <div className="lp-fan-arc">
-                {FAN.map((c, i) => (
-                  <article className={`lp-fcard p${i + 1}`} style={{ "--i": i } as React.CSSProperties} key={c.tag}>
-                    <div className="lp-fcard-top">
-                      <span className={`lp-fcard-tag ${c.tone}`}>{c.tag}</span>
-                      <span className="lp-fcard-ico">{c.ico}</span>
-                    </div>
-                    <div className="lp-fcard-title">{c.title}</div>
-                    <div className="lp-fcard-body">{c.body}</div>
-                    <div className="lp-fcard-foot">{c.foot}</div>
-                  </article>
-                ))}
+            <div className="lp-surface">
+              <div className="lp-surface-bar">
+                <span className="lp-surface-id">{I.scroll}RET-260903-031</span>
+                <span className="lp-surface-live"><span className="lp-fan-dot" />Reversal confirmed · 0.42s · <b>idempotent</b></span>
               </div>
+              <ol className="lp-surface-rail">
+                {STEPS.map((s, i) => {
+                  const last = i === STEPS.length - 1;
+                  return (
+                    <li className={`lp-srow${last ? " done" : ""}`} style={{ "--i": i } as React.CSSProperties} key={s.tag}>
+                      <span className="lp-srow-node">{last ? I.check : i + 1}</span>
+                      <div className="lp-srow-main">
+                        <div className="lp-srow-head">
+                          <span className={`lp-fcard-tag ${s.tone}`}>{s.tag}</span>
+                          <span className="lp-srow-title">{s.title}</span>
+                        </div>
+                        <div className="lp-srow-body">{s.body}</div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           </Reveal>
         </div>
