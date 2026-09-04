@@ -76,7 +76,7 @@ export default function EvaluationPage() {
       </Card></div>
       <div className="split-grid">
         <Card title="Release gates" description="A failed safety gate blocks execution, regardless of model score.">
-          <div className="settings-list">{suites.map((suite) => <div className="settings-row" key={suite.name}><div><strong>{suite.name}</strong><p>{suite.scope}</p></div><StatusPill tone="neutral">{suite.target}</StatusPill></div>)}</div>
+          <div className="settings-list">{suites.map((suite) => <div className="settings-row" key={suite.name}><div><strong>{suite.name}</strong><p>{suite.scope}</p></div><StatusPill tone="neutral" icon="shield">{suite.target}</StatusPill></div>)}</div>
         </Card>
         <Card title="Decision boundary" description="Every case produces one explicit outcome before money can move.">
           <details className="evidence-details"><summary>View machine-readable contract</summary><div className="code-block">{`{

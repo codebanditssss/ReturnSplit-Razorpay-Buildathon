@@ -1,9 +1,23 @@
 import type { ReactNode } from "react";
+import { Icon, type IconName } from "./icons";
 
 export type StatusTone = "ready" | "completed" | "active" | "review" | "pending" | "processing" | "blocked" | "failed" | "neutral" | "info";
 
-export function StatusPill({ children, tone = "neutral" }: { children: ReactNode; tone?: StatusTone }) {
-  return <span className={`status-pill ${tone}`}>{children}</span>;
+const statusIcons: Record<StatusTone, IconName> = {
+  ready: "circle-check",
+  completed: "circle-check",
+  active: "circle-check",
+  review: "circle-alert",
+  pending: "clock",
+  processing: "refresh",
+  blocked: "circle-alert",
+  failed: "circle-alert",
+  neutral: "activity",
+  info: "refresh",
+};
+
+export function StatusPill({ children, tone = "neutral", icon }: { children: ReactNode; tone?: StatusTone; icon?: IconName }) {
+  return <span className={`status-pill ${tone}`}><Icon name={icon ?? statusIcons[tone]} /><span>{children}</span></span>;
 }
 
 export function PageHeader({

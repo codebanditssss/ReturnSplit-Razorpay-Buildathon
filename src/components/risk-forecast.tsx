@@ -58,9 +58,9 @@ export function RiskForecast({ initial, reservePaise, reserveSource, openExposur
 
   return (
     <div className="page">
-      <PageHeader title="Reserve control" description="Fund the open refund queue and upcoming demand before it becomes urgent." actions={<StatusPill tone="info">Planning only</StatusPill>} />
+      <PageHeader title="Reserve control" description="Fund the open refund queue and upcoming demand before it becomes urgent." actions={<StatusPill tone="info" icon="shield">Planning only</StatusPill>} />
 
-      <div className="callout info" style={{ marginBottom: 18 }}><Icon name="shield" /><div><strong>{data.isIllustrative ? "Illustrative Creo Market data" : "Workspace forecast"}</strong><p>{data.notice ?? "Forecasts support reserve planning only. Claim-level reversals remain deterministic and human-approved."}</p></div></div>
+      <div className="callout info operational-note" style={{ marginBottom: 18 }}><Icon name="shield" /><div><strong>{data.isIllustrative ? "Illustrative Creo Market data" : "Workspace forecast"}</strong><p>{data.notice ?? "Forecasts support reserve planning only. Claim-level reversals remain deterministic and human-approved."}</p></div></div>
       <p className="sr-only" role="status" aria-atomic="true">{refreshMessage}</p>
 
       <section className="metric-strip" aria-label="Forecast overview">
@@ -71,7 +71,8 @@ export function RiskForecast({ initial, reservePaise, reserveSource, openExposur
       </section>
 
       <div className="risk-layout">
-        <Card className="forecast-card" title="Daily approved-refund exposure" description={`${data.isIllustrative ? "Synthetic history" : "Observed totals"} with forecast range; uncertainty widens with horizon.`} action={<div className="tabs" role="group" aria-label="Forecast horizon">{([7, 14, 30] as const).map((value) => <button key={value} className={`tab ${horizon === value ? "is-active" : ""}`} aria-pressed={horizon === value} onClick={() => changeHorizon(value)}>{value}d</button>)}</div>}>
+        <div className="risk-main">
+          <Card className="forecast-card" title="Daily approved-refund exposure" description={`${data.isIllustrative ? "Synthetic history" : "Observed totals"} with forecast range; uncertainty widens with horizon.`} action={<div className="tabs" role="group" aria-label="Forecast horizon">{([7, 14, 30] as const).map((value) => <button key={value} className={`tab ${horizon === value ? "is-active" : ""}`} aria-pressed={horizon === value} onClick={() => changeHorizon(value)}>{value}d</button>)}</div>}>
           {error && <div className="callout warning" role="alert" style={{ marginBottom: 12 }}><Icon name="circle-alert" /><div><strong>Refresh paused</strong><p>{error}</p></div></div>}
           {loading && <div className="forecast-loading"><span className="spinner" /> Refreshing planning view…</div>}
           <div className={`forecast-chart ${loading ? "is-loading" : ""}`} aria-busy={loading} tabIndex={0} aria-label="Scrollable refund exposure chart">
@@ -100,7 +101,19 @@ export function RiskForecast({ initial, reservePaise, reserveSource, openExposur
             </table></div>
           </details>
           <div className="forecast-source"><span><Icon name="activity" />{data.modelLabel}</span><span>History through {historyThrough ? shortDate(historyThrough) : "unavailable"} · refreshed {dateTime(data.generatedAt)}</span></div>
-        </Card>
+          </Card>
+
+          <Card title="Planning boundary">
+            <div className="check-list">
+              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Forecasts only aggregate refund cash demand</span></div>
+              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Current open claims are added once, outside the forecast</span></div>
+              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Lower, middle, and upper model estimates remain visible</span></div>
+              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Per-claim money still comes from the paise engine</span></div>
+              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Forecasts cannot approve or reprioritize a refund</span></div>
+            </div>
+            <p className="planning-definition">The demo forecast represents new refund authorizations after the history cutoff. The separate open commitment contains only today’s unresolved queue, so it is not counted twice.</p>
+          </Card>
+        </div>
 
         <div className="risk-side">
           <Card title="Reserve coverage" description={`Available reserve against the open queue and ${horizon}-day stress plan.`}>
@@ -124,16 +137,6 @@ export function RiskForecast({ initial, reservePaise, reserveSource, openExposur
               <RiskRow tone={openExposure.unpricedClaimCount > 0 ? "warning" : "neutral"} title="Unpriced claims" detail={`${openExposure.unpricedClaimCount} claim${openExposure.unpricedClaimCount === 1 ? "" : "s"} still require review and are not included in the amount above.`} />
             </div>
             <Link className="button secondary reserve-link" href="/claims"><Icon name="inbox" />Review open claims</Link>
-          </Card>
-          <Card title="Planning boundary">
-            <div className="check-list">
-              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Forecasts only aggregate refund cash demand</span></div>
-              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Current open claims are added once, outside the forecast</span></div>
-              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Lower, middle, and upper model estimates remain visible</span></div>
-              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Per-claim money still comes from the paise engine</span></div>
-              <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Forecasts cannot approve or reprioritize a refund</span></div>
-            </div>
-            <p className="planning-definition">The demo forecast represents new refund authorizations after the history cutoff. The separate open commitment contains only today’s unresolved queue, so it is not counted twice.</p>
           </Card>
         </div>
       </div>

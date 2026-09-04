@@ -1,5 +1,5 @@
-/* Circular 270-degree arc gauge (Dynamics 365 "Lead Score" ref, retinted to brand).
-   Self-contained inline styling so it never depends on shared CSS. */
+import { Icon } from "./icons";
+
 export function ScoreGauge({
   ratio,
   valueText,
@@ -15,37 +15,42 @@ export function ScoreGauge({
   caption: string;
   tone?: "good" | "warning";
 }) {
-  const CX = 70;
-  const CY = 70;
-  const R = 54;
-  const C = 2 * Math.PI * R;
-  const sweep = 0.75; // 270 degrees, gap at the bottom
-  const track = C * sweep;
-  const clamped = Math.max(0, Math.min(1, ratio));
-  const fill = track * clamped;
-  const color = tone === "good" ? "#176247" : "#925816";
+  const percentage = Math.max(0, ratio * 100);
+  const scaleMaximum = Math.max(125, Math.ceil(percentage / 25) * 25);
+  const fillPercentage = Math.min(100, percentage / scaleMaximum * 100);
+  const targetPercentage = 100 / scaleMaximum * 100;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-      <div style={{ position: "relative", width: 140, height: 140, flex: "0 0 auto" }}>
-        <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label={`${label}: ${valueText}, ${grade}`}>
-          <circle cx={CX} cy={CY} r={R} fill="none" stroke="#e4e9e4" strokeWidth={11} strokeLinecap="round"
-            strokeDasharray={`${track} ${C - track}`} transform={`rotate(135 ${CX} ${CY})`} />
-          <circle cx={CX} cy={CY} r={R} fill="none" stroke={color} strokeWidth={11} strokeLinecap="round"
-            strokeDasharray={`${fill} ${C - fill}`} transform={`rotate(135 ${CX} ${CY})`}
-            style={{ transition: "stroke-dasharray .8s cubic-bezier(.34,1.2,.5,1)" }} />
-        </svg>
-        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>
-          <div>
-            <div style={{ fontSize: 30, fontWeight: 720, letterSpacing: "-.03em", lineHeight: 1, color: "#17201c", fontVariantNumeric: "tabular-nums" }}>{valueText}</div>
-            <div style={{ marginTop: 5, fontSize: 11, fontWeight: 650, letterSpacing: ".02em", color }}>{grade}</div>
+    <div className={`coverage-summary ${tone}`}>
+      <div className="coverage-heading">
+        <div>
+          <span className="coverage-label">{label}</span>
+          <div className="coverage-value-row">
+            <strong className="coverage-value">{valueText}</strong>
+            <span className="coverage-state"><Icon name={tone === "good" ? "circle-check" : "circle-alert"} />{grade}</span>
           </div>
         </div>
+        <span className="coverage-target">Target 100%</span>
       </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#57615b" }}>{label}</div>
-        <p style={{ margin: "6px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "#66716b" }}>{caption}</p>
+
+      <div
+        className="coverage-meter"
+        role="meter"
+        aria-label={`${label}: ${valueText}, ${grade}`}
+        aria-valuemin={0}
+        aria-valuemax={scaleMaximum}
+        aria-valuenow={Math.round(percentage)}
+      >
+        <span className="coverage-fill" style={{ width: `${fillPercentage}%` }} />
+        <span className="coverage-target-mark" style={{ left: `${targetPercentage}%` }} />
       </div>
+      <div className="coverage-scale" aria-hidden="true">
+        <span>0%</span>
+        <span style={{ left: `${targetPercentage}%` }}>100%</span>
+        <span>{scaleMaximum}%</span>
+      </div>
+
+      <p className="coverage-caption">{caption}</p>
     </div>
   );
 }

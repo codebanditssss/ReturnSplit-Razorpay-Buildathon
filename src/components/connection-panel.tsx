@@ -46,7 +46,7 @@ export function ConnectionPanel({ initialMode, initialLabel }: { initialMode: Pr
       </div>
       <div className="settings-row">
         <div><strong>Webhook verification</strong><p>HMAC rotation and replay behavior are contract-tested; no live delivery telemetry is connected.</p></div>
-        <StatusPill tone="neutral">Tested</StatusPill>
+        <StatusPill tone="neutral" icon="circle-check">Tested</StatusPill>
       </div>
       <div className="settings-row">
         <div><strong>Live reconciliation</strong><p>Requires a durable provider-sync worker before production use.</p></div>

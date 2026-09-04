@@ -49,11 +49,11 @@ export default function PoliciesPage() {
   ];
 
   return (
-    <div className="page page-narrow">
+    <div className="page">
       <PageHeader title="Policies" description="Versioned liability rules frozen to the order date." />
       <div className="workbench-main">
         <Card title={`${currentPolicy.name} v${currentPolicy.version}`} description={`Effective ${dateOnly(currentPolicy.effectiveFrom)} · Current version`} action={<StatusPill tone="active">Active</StatusPill>}>
-          <div className="callout info"><Icon name="lock" /><div><strong>Published rules are immutable</strong><p>Changes create a new version. Existing orders continue using the version active when they were placed.</p></div></div>
+          <div className="callout info operational-note"><Icon name="lock" /><div><strong>Published rules are immutable</strong><p>Changes create a new version. Existing orders continue using the version active when they were placed.</p></div></div>
           <div style={{ marginTop: 18 }} className="table-card mobile-card-table-wrap" role="region" aria-label="Policy rules">
             <table className="data-table mobile-card-table info-card-table">
               <caption className="sr-only">Funding rules in {currentPolicy.name} version {currentPolicy.version}</caption>
@@ -66,7 +66,7 @@ export default function PoliciesPage() {
           <div className="settings-list">
             {policies.map((policy) => {
               const linkedOrders = orders.filter((order) => order.policyId === policy.id).length;
-              return <div className="settings-row" key={policy.id}><div><strong>{policy.name} v{policy.version}</strong><p>{dateOnly(policy.effectiveFrom)}{policy.effectiveTo ? ` – ${dateOnly(policy.effectiveTo)}` : " onward"} · {linkedOrders} linked order{linkedOrders === 1 ? "" : "s"}</p></div><StatusPill tone={policy.effectiveTo ? "neutral" : "active"}>{policy.effectiveTo ? "Archived" : "Active"}</StatusPill></div>;
+              return <div className="settings-row" key={policy.id}><div><strong>{policy.name} v{policy.version}</strong><p>{dateOnly(policy.effectiveFrom)}{policy.effectiveTo ? ` – ${dateOnly(policy.effectiveTo)}` : " onward"} · {linkedOrders} linked order{linkedOrders === 1 ? "" : "s"}</p></div><StatusPill tone={policy.effectiveTo ? "neutral" : "active"} icon={policy.effectiveTo ? "clock" : undefined}>{policy.effectiveTo ? "Archived" : "Active"}</StatusPill></div>;
             })}
           </div>
         </Card>

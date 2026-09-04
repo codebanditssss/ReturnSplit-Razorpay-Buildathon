@@ -97,14 +97,17 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
         role={menuOpen ? "dialog" : undefined} aria-modal={menuOpen || undefined} aria-label={menuOpen ? "Primary navigation" : undefined}>
         <div className="brand-row">
           <Link className="brand" href="/claims" aria-label="ReturnSplit home">
-            <span className="brand-mark"><span /><span /></span><span className="brand-word">Return<span>Split</span></span>
+            <Image className="brand-mark" src="/icon.svg" alt="" width={22} height={22} priority />
+            <span className="brand-word">Return<span>Split</span></span>
           </Link>
           <button ref={sidebarCloseButtonRef} className="icon-button sidebar-close" aria-label="Close navigation" onClick={() => closeMobileMenu()}>
             <Icon name="x" />
           </button>
         </div>
         <div className="workspace-switcher" aria-label="Current workspace, Creo Market">
-          <span className="workspace-avatar">C</span>
+          <span className="workspace-avatar">
+            <Image src="/brands/creo-market.png" alt="" width={32} height={32} />
+          </span>
           <span className="workspace-copy"><strong>Creo Market</strong><span>Refund operations</span></span>
         </div>
         <nav aria-label="Primary navigation" className="primary-nav">
@@ -125,14 +128,17 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
             <span className="user-avatar">
               <Image className="profile-photo" src="/khushi-diwan-avatar.webp" alt="" width={40} height={40} />
             </span>
-            <div><strong>Khushi Diwan</strong><span>Refund operations</span></div>
+            <div><strong>Khushi Diwan</strong><span>Finance operations lead</span></div>
           </div>
         </div>
       </aside>
       <div className="dashboard-frame">
         <div ref={mobileBarRef} className="mobile-bar" inert={menuOpen}>
           <button ref={menuButtonRef} className="icon-button" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
-          <Link className="brand" href="/claims"><span className="brand-mark"><span /><span /></span><span className="brand-word">Return<span>Split</span></span></Link>
+          <Link className="brand" href="/claims" aria-label="ReturnSplit home">
+            <Image className="brand-mark" src="/icon.svg" alt="" width={20} height={20} priority />
+            <span className="brand-word">Return<span>Split</span></span>
+          </Link>
           <span className="mobile-avatar">
             <Image className="profile-photo" src="/khushi-diwan-avatar.webp" alt="Khushi Diwan" width={32} height={32} priority />
           </span>
