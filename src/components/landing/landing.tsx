@@ -304,12 +304,12 @@ export function Landing() {
             <a href="#assurance">Assurance</a>
             <a href="#developers">Developers</a>
             <a href="#faq">FAQ</a>
-            <a href="https://github.com/codebanditssss/ReturnSplit-RazorPay-Hackathon-" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon" target="_blank" rel="noreferrer">GitHub</a>
           </div>
           <div className="lp-nav-cta">
             <a
               className="lp-btn lp-btn-ghost lp-nav-github"
-              href="https://github.com/codebanditssss/ReturnSplit-RazorPay-Hackathon-"
+              href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon"
               target="_blank"
               rel="noreferrer"
               aria-label="Open ReturnSplit on GitHub in a new tab"
@@ -658,7 +658,7 @@ export function Landing() {
               <Link href="/claims">Workbench</Link>
               <Link href="/evaluation">Evaluation</Link>
               <a href="#developers">Engine contract</a>
-              <a href="https://github.com/codebanditssss/ReturnSplit-RazorPay-Hackathon-" target="_blank" rel="noreferrer">GitHub</a>
+              <a href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon" target="_blank" rel="noreferrer">GitHub</a>
               <a href="https://razorpay.com/docs/payments/route/" target="_blank" rel="noreferrer">Route docs</a>
             </div>
           </div>
