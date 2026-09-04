@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -125,8 +126,10 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
             <Icon name="settings" /><span>Settings</span>
           </Link>
           <div className="user-row">
-            <span className="user-avatar">KD</span>
-            <div><strong>Khushi Diwan</strong><span>Refund operations · maker-checker</span></div>
+            <span className="user-avatar">
+              <Image className="profile-photo" src="/khushi-diwan-avatar.webp" alt="" width={40} height={40} />
+            </span>
+            <div><strong>Khushi Diwan</strong><span>Refund operations</span></div>
           </div>
         </div>
       </aside>
@@ -134,7 +137,9 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
         <div ref={mobileBarRef} className="mobile-bar" inert={menuOpen}>
           <button ref={menuButtonRef} className="icon-button" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
           <Link className="brand" href="/claims"><span className="brand-mark"><span /><span /></span><span>ReturnSplit</span></Link>
-          <span className="mobile-avatar">KD</span>
+          <span className="mobile-avatar">
+            <Image className="profile-photo" src="/khushi-diwan-avatar.webp" alt="Khushi Diwan" width={32} height={32} priority />
+          </span>
         </div>
         <header className="dashboard-topbar" inert={menuOpen}>
           <div className="dashboard-context" aria-label={`Creo Market, ${currentSection}`}>

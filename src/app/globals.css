@@ -91,8 +91,16 @@ button { color: inherit; }
   border: 1px solid var(--border); border-radius: var(--radius); background: rgba(255,255,255,.58);
 }
 .connection-dot { width: 7px; height: 7px; margin-top: 5px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
-.user-row { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 9px; margin-top: 6px; padding: 10px 8px 0; border-top: 1px solid var(--border); }
-.user-avatar, .mobile-avatar { width: 32px; height: 32px; background: #e8e4dc; color: #665b48; }
+.user-row {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 11px;
+  margin-top: 7px; padding: 10px; border: 1px solid var(--border); border-radius: 10px;
+  background: rgba(255,255,255,.62);
+}
+.user-avatar, .mobile-avatar {
+  overflow: hidden; width: 40px; height: 40px; border: 2px solid #fff; border-radius: 50%;
+  background: #e8e4dc; box-shadow: 0 0 0 1px #c9d3cc;
+}
+.profile-photo { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
 .quiet-icon, .icon-button { display: grid; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; color: var(--text-secondary); }
 .quiet-icon { width: 24px; height: 24px; }
 .quiet-icon svg { width: 14px; }
@@ -582,7 +590,7 @@ button { color: inherit; }
   .mobile-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; height: 58px; padding: 0 16px; border-bottom: 1px solid var(--border); background: rgba(247,248,246,.96); }
   .mobile-bar .brand { font-size: 14px; }
   .mobile-bar .brand-mark { width: 19px; height: 19px; }
-  .mobile-avatar { width: 30px; height: 30px; }
+  .mobile-avatar { width: 32px; height: 32px; }
   .button, .icon-button, .tab, .nav-link, .liability-options span { min-height: 44px; }
   .dashboard-frame { margin-left: 0; }
   .dashboard-topbar { display: none; }
