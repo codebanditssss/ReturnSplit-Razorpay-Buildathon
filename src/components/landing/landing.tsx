@@ -307,7 +307,16 @@ export function Landing() {
             <a href="https://github.com/codebanditssss/ReturnSplit-RazorPay-Hackathon-" target="_blank" rel="noreferrer">GitHub</a>
           </div>
           <div className="lp-nav-cta">
-            <Link className="lp-btn lp-btn-ghost" href="/claims/RET-260903-031">View demo claim</Link>
+            <a
+              className="lp-btn lp-btn-ghost lp-nav-github"
+              href="https://github.com/codebanditssss/ReturnSplit-RazorPay-Hackathon-"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open ReturnSplit on GitHub in a new tab"
+            >
+              GitHub
+            </a>
+            <Link className="lp-btn lp-btn-ghost lp-nav-demo" href="/claims/RET-260903-031">View demo claim</Link>
             <Link className="lp-btn lp-btn-primary" href="/claims" aria-label="Open the workbench">
               <span className="lp-nav-label-long">Open the workbench</span>
               <span className="lp-nav-label-short" aria-hidden="true">Workbench</span>
