@@ -236,6 +236,15 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-evidence-grid b { color: #f1f6f3; font-weight: 600; }
 .lp-evidence-grid i { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: var(--lp-green-bright); box-shadow: 0 0 0 4px rgba(79,195,154,.12); }
 
+/* ============ PRODUCT TOUR ============ */
+.lp-tour-section { padding-bottom: 24px; }
+.lp-tour-shell {
+  max-width: 1180px; margin: 42px auto 0; overflow: hidden;
+  border: 1px solid rgba(23,98,71,.28); border-radius: 18px; background: #0b1110;
+  box-shadow: 0 40px 90px -46px rgba(14,28,22,.6), 0 1px 0 rgba(255,255,255,.7) inset;
+}
+.lp-tour-video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
+
 /* ============ SECTIONS ============ */
 .lp-section { padding: 116px 0; }
 .lp-section-head { max-width: 760px; }

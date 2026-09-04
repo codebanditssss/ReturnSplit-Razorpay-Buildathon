@@ -57,6 +57,46 @@ function Reveal({ children, style, delay }: { children: React.ReactNode; style?:
   );
 }
 
+function ProductTour() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reducedMotion.matches) {
+      video.pause();
+      video.currentTime = 0;
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) void video.play().catch(() => undefined);
+      else video.pause();
+    }, { threshold: 0.2 });
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      className="lp-tour-video"
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      poster="/demo/returnsplit-product-tour-poster.webp"
+      aria-label="A short tour of the ReturnSplit claims queue, claim review, orders, policies, evaluation, and activity views"
+    >
+      <source src="/demo/returnsplit-product-tour.mp4" type="video/mp4" />
+    </video>
+  );
+}
+
 /* ---------- icons ---------- */
 const I = {
   arrowLeft: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>,
@@ -360,6 +400,23 @@ export function Landing() {
           <span>Deterministic test provider</span>
         </div>
       </div>
+
+      <section className="lp-section lp-tour-section" aria-labelledby="product-tour-title">
+        <div className="lp-wrap">
+          <Reveal>
+            <div className="lp-section-head center">
+              <span className="lp-eyebrow sq">Product tour</span>
+              <h2 id="product-tour-title">Return control, in 18 seconds.</h2>
+              <p>Move from the operations queue into a claim, inspect the governing policy, and follow the recorded outcome.</p>
+            </div>
+          </Reveal>
+          <Reveal>
+            <div className="lp-tour-shell">
+              <ProductTour />
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       {/* control surface - one framed audit panel */}
       <section className="lp-section lp-fan-sec" id="surface">
