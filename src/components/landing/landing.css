@@ -121,7 +121,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 }
 /* compact state (actively scrolling down) — collapse around the wordmark + CTAs */
 .lp-nav.is-compact .lp-nav-shell { max-width: 560px; height: 52px; }
-.lp-nav.is-compact .lp-word { font-size: 18px; }
+.lp-nav.is-compact .lp-word { font-size: 22px; }
 .lp-nav.is-compact .lp-nav-cta .lp-btn { height: 36px; font-size: 12.5px; padding: 0 14px; }
 
 .lp-nav-links { display: flex; gap: 28px; overflow: hidden; max-width: 640px; opacity: 1; transition: max-width .45s cubic-bezier(.34,1.2,.5,1), opacity .28s ease, transform .3s ease; }
@@ -132,7 +132,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-nav-cta .lp-btn { height: 42px; font-size: 13.5px; padding: 0 18px; transition: height .38s ease, font-size .38s ease, padding .38s ease, background .16s ease, transform .16s ease; }
 .lp-nav-social img { display: block; }
 .lp-nav-x { width: 42px; padding: 0 !important; }
-.lp-word { transition: font-size .38s cubic-bezier(.34,1.2,.5,1); }
+.lp-nav .lp-word { font-size: 25px; font-weight: 800; transition: font-size .38s cubic-bezier(.34,1.2,.5,1); }
 
 /* ============ HERO ============ */
 .lp-hero { position: relative; padding: 104px 0 40px; text-align: center; overflow: hidden; }
@@ -286,6 +286,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 @media (max-width: 560px) {
   .lp-nav { padding: 0 12px; }
   .lp-nav-shell { gap: 12px; height: 60px; padding: 0 4px 0 8px; }
+  .lp-nav .lp-word { font-size: 24px; }
   .lp-nav-cta { gap: 8px; }
   .lp-nav-cta .lp-btn { height: 40px; padding: 0 15px; font-size: 13px; }
   .lp-nav-cta .lp-nav-x { width: 40px; padding: 0; }
@@ -306,7 +307,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
   .lp-nav-shell { gap: 8px; padding-left: 6px; }
   .lp-nav-cta { gap: 6px; }
   .lp-nav-cta .lp-btn { padding: 0 10px; font-size: 12.5px; }
-  .lp-word { font-size: 19px; }
+  .lp-nav .lp-word { font-size: 23px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lp-root * { animation: none !important; }
