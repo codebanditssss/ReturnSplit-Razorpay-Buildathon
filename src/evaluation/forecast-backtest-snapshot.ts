@@ -6,7 +6,7 @@
  */
 export const latestForecastBacktest = {
   evaluatedAt: "2026-09-04T08:57:27.375Z",
-  datasetLabel: "Mora Market synthetic demo v1",
+  datasetLabel: "Creo Market synthetic demo v1",
   datasetKind: "synthetic_demo",
   datasetPoints: 56,
   datasetSha256:

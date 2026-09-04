@@ -60,7 +60,7 @@ export function RiskForecast({ initial, reservePaise, reserveSource, openExposur
     <div className="page">
       <PageHeader title="Reserve control" description="Fund the open refund queue and upcoming demand before it becomes urgent." actions={<StatusPill tone="info">Planning only</StatusPill>} />
 
-      <div className="callout info" style={{ marginBottom: 18 }}><Icon name="shield" /><div><strong>{data.isIllustrative ? "Illustrative Mora Market data" : "Workspace forecast"}</strong><p>{data.notice ?? "Forecasts support reserve planning only. Claim-level reversals remain deterministic and human-approved."}</p></div></div>
+      <div className="callout info" style={{ marginBottom: 18 }}><Icon name="shield" /><div><strong>{data.isIllustrative ? "Illustrative Creo Market data" : "Workspace forecast"}</strong><p>{data.notice ?? "Forecasts support reserve planning only. Claim-level reversals remain deterministic and human-approved."}</p></div></div>
       <p className="sr-only" role="status" aria-atomic="true">{refreshMessage}</p>
 
       <section className="metric-strip" aria-label="Forecast overview">

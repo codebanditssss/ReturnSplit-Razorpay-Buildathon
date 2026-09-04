@@ -50,7 +50,7 @@ fallback.
   not a complete edge-security layer.
 - `p10`–`p90` is a nominal 80% prediction band. Backtest and calibrate it on
   representative ReturnSplit history before calling it calibrated. The bundled
-  Mora Market history is synthetic and every result from it remains labeled
+  Creo Market history is synthetic and every result from it remains labeled
   illustrative.
 
 The checkpoint revision is pinned in `app/main.py`; package versions are pinned

@@ -20,6 +20,10 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
   const sidebarCloseButtonRef = useRef<HTMLButtonElement>(null);
   const mobileBarRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const currentSection = pathname.startsWith("/claims/")
+    ? "Claim review"
+    : navItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))?.label
+      ?? (pathname === "/settings" ? "Settings" : "Operations");
 
   function closeMobileMenu(restoreFocus = true) {
     setMenuOpen(false);
@@ -98,9 +102,9 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
             <Icon name="x" />
           </button>
         </div>
-        <div className="workspace-switcher" aria-label="Current workspace, Mora Market">
-          <span className="workspace-avatar">M</span>
-          <span className="workspace-copy"><strong>Mora Market</strong><span>Operations</span></span>
+        <div className="workspace-switcher" aria-label="Current workspace, Creo Market">
+          <span className="workspace-avatar">C</span>
+          <span className="workspace-copy"><strong>Creo Market</strong><span>Refund operations</span></span>
         </div>
         <nav aria-label="Primary navigation" className="primary-nav">
           {navItems.map((item) => {
@@ -126,12 +130,29 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
           </div>
         </div>
       </aside>
-      <div ref={mobileBarRef} className="mobile-bar" inert={menuOpen}>
-        <button ref={menuButtonRef} className="icon-button" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
-        <Link className="brand" href="/claims"><span className="brand-mark"><span /><span /></span><span>ReturnSplit</span></Link>
-        <span className="mobile-avatar">KD</span>
+      <div className="dashboard-frame">
+        <div ref={mobileBarRef} className="mobile-bar" inert={menuOpen}>
+          <button ref={menuButtonRef} className="icon-button" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
+          <Link className="brand" href="/claims"><span className="brand-mark"><span /><span /></span><span>ReturnSplit</span></Link>
+          <span className="mobile-avatar">KD</span>
+        </div>
+        <header className="dashboard-topbar" inert={menuOpen}>
+          <div className="dashboard-context" aria-label={`Creo Market, ${currentSection}`}>
+            <span>Creo Market</span><span aria-hidden="true">/</span><strong>{currentSection}</strong>
+          </div>
+          <form className="dashboard-search" action="/claims" method="get" role="search">
+            <Icon name="search" />
+            <label className="sr-only" htmlFor="dashboard-search">Search claims</label>
+            <input id="dashboard-search" name="q" type="search" placeholder="Search claims, orders, customers" autoComplete="off" />
+            <button className="sr-only" type="submit">Search claims</button>
+          </form>
+          <div className="topbar-environment" title="This workspace cannot move live money">
+            <span className="connection-dot" />
+            <span>{providerMode === "demo" ? "Guided demo" : providerLabel}</span>
+          </div>
+        </header>
+        <main className="main-content" id="main-content" tabIndex={-1} inert={menuOpen}>{children}</main>
       </div>
-      <main className="main-content" id="main-content" tabIndex={-1} inert={menuOpen}>{children}</main>
     </div>
   );
 }

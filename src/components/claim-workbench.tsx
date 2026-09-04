@@ -415,8 +415,8 @@ export function ClaimWorkbench({
       : isRetry
       ? `Retry ${formatMoney(pendingSellerPaise)} from ${pendingReversals.map((entry) => entry.sellerName).join(" + ")}, then refund ${formatMoney(plan.customerRefundPaise)}.`
       : plan.sellerFundedPaise
-        ? `Reverse ${formatMoney(plan.sellerFundedPaise)} from ${plan.sellerReversals.map((entry) => entry.sellerName).join(" + ")}. Mora Market contributes ${formatMoney(plan.marketplaceFundedPaise)}.`
-        : `Mora Market funds the full ${formatMoney(plan.customerRefundPaise)} refund.`;
+        ? `Reverse ${formatMoney(plan.sellerFundedPaise)} from ${plan.sellerReversals.map((entry) => entry.sellerName).join(" + ")}. Creo Market contributes ${formatMoney(plan.marketplaceFundedPaise)}.`
+        : `Creo Market funds the full ${formatMoney(plan.customerRefundPaise)} refund.`;
   const safetyMessage = openRecovery && refundCompleted
     ? "Recovery updates record accounting outcomes only; they cannot move customer or seller funds."
     : requiresReconciliation
@@ -500,7 +500,7 @@ export function ClaimWorkbench({
             {claim.status === "needs_review" && claim.review.flags.some((flag) => flag.code === "liability_unclear") && (
               <div className="review-form">
                 {escalation?.kind === "evidence_request" && escalation.status === "open" && <div ref={escalationStatusRef} tabIndex={-1}><OperationsCase receipt={escalation} /></div>}
-                <p className="field-help">Mora Market can front the customer refund now. A recovery case will track courier or seller responsibility separately.</p>
+                <p className="field-help">Creo Market can front the customer refund now. A recovery case will track courier or seller responsibility separately.</p>
                 <button className="button secondary" disabled={reviewState === "saving"} onClick={() => void saveReviewDecision({ kind: "liability", liability: "marketplace" })}><Icon name="check" /> {reviewState === "saving" ? "Saving and recalculating…" : "Front refund from marketplace"}</button>
                 {!(escalation?.kind === "evidence_request" && escalation.status === "open") && <>
                   <details className="decision-alternative"><summary>Cannot determine who should fund this</summary><div className="decision-alternative-body"><div className="field"><label htmlFor="liability-evidence-rationale">Why is more evidence required?</label><textarea id="liability-evidence-rationale" maxLength={500} value={evidenceRationale} onChange={(event) => setEvidenceRationale(event.target.value)} placeholder="For example: packaging photos do not distinguish courier damage from inadequate packing." /><p className="field-help">Required · 12–500 characters. No funding decision will be guessed.</p></div><button className="button secondary" disabled={evidenceRationale.trim().length < 12 || escalating} onClick={() => void openOperationsCase({ kind: "evidence_request", rationale: evidenceRationale })}><Icon name="clock" />{escalating ? "Opening request…" : "Request supporting evidence"}</button></div></details>
@@ -590,7 +590,7 @@ export function ClaimWorkbench({
 
       {localState === "confirm" && plan && <dialog ref={dialogRef} className="modal-dialog" aria-labelledby="confirm-title" onCancel={(event) => { event.preventDefault(); setLocalState("initial"); }} onMouseDown={(event) => { if (event.target === event.currentTarget) setLocalState("initial"); }}>
         <section className="modal">
-          <header className="modal-header"><div><h2 id="confirm-title">{retryingRefund ? `Retry the ${formatMoney(plan.customerRefundPaise)} customer refund?` : isRetry || plan.sellerFundedPaise ? `Reverse ${formatMoney(isRetry ? pendingSellerPaise : plan.sellerFundedPaise)} and refund ${formatMoney(plan.customerRefundPaise)}?` : `Refund ${formatMoney(plan.customerRefundPaise)} from Mora Market?`}</h2><p>{retryingRefund ? "Every seller reversal is already confirmed and will be skipped." : isRetry ? "Confirmed reversals will not run again." : plan.sellerReversals.length ? "Seller funds are reversed first; only then is the customer refunded." : "No seller transfer will be reversed for this marketplace-funded decision."}</p></div><button ref={closeRef} className="icon-button" aria-label="Close confirmation" onClick={() => setLocalState("initial")}><Icon name="x" /></button></header>
+          <header className="modal-header"><div><h2 id="confirm-title">{retryingRefund ? `Retry the ${formatMoney(plan.customerRefundPaise)} customer refund?` : isRetry || plan.sellerFundedPaise ? `Reverse ${formatMoney(isRetry ? pendingSellerPaise : plan.sellerFundedPaise)} and refund ${formatMoney(plan.customerRefundPaise)}?` : `Refund ${formatMoney(plan.customerRefundPaise)} from Creo Market?`}</h2><p>{retryingRefund ? "Every seller reversal is already confirmed and will be skipped." : isRetry ? "Confirmed reversals will not run again." : plan.sellerReversals.length ? "Seller funds are reversed first; only then is the customer refunded." : "No seller transfer will be reversed for this marketplace-funded decision."}</p></div><button ref={closeRef} className="icon-button" aria-label="Close confirmation" onClick={() => setLocalState("initial")}><Icon name="x" /></button></header>
           <div className="modal-body">
             <div className="confirmation-ledger">
               {plan.sellerReversals.map((reversal) => {
@@ -723,7 +723,7 @@ function parseRupeesToPaise(value: string): number | undefined {
 function dateTime(value: string) { return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }).format(new Date(value)); }
 function dateOnly(value: string) { return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value}T00:00:00+05:30`)); }
 function timeOnly(value: string) { return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }).format(new Date(value)); }
-function fundingSourceText(value: LiabilityParty) { return ({ seller: "Seller net settlement + marketplace commission", marketplace: "Mora Market", courier: "Mora Market advance; courier recovery pending", customer: "Customer", unresolved: "Not determined" } as const)[value]; }
+function fundingSourceText(value: LiabilityParty) { return ({ seller: "Seller net settlement + marketplace commission", marketplace: "Creo Market", courier: "Creo Market advance; courier recovery pending", customer: "Customer", unresolved: "Not determined" } as const)[value]; }
 function recoveryPartyLabel(value: RecoveryReceipt["responsibleParty"]) { return ({ seller: "Seller", courier: "Courier", marketplace: "Marketplace / internal", unresolved: "Unresolved" } as const)[value]; }
 function recoveryOutcomeLabel(value: RecoveryReceipt["recoveryOutcome"]) { return ({ pending: "Pending", partial: "Partially accounted", recovered: "Fully recovered", written_off: "Written off", mixed: "Recovered + written off" } as const)[value]; }
 function formatCaseAge(hours: number) { return hours < 1 ? "Less than 1 hour" : hours < 24 ? `${hours} hour${hours === 1 ? "" : "s"}` : `${Math.floor(hours / 24)} day${Math.floor(hours / 24) === 1 ? "" : "s"}`; }

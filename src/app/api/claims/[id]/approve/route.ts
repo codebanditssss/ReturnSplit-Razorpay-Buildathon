@@ -97,8 +97,8 @@ export async function POST(request: Request, { params }: RouteContext) {
       provider,
       store,
       approval: {
-        actorId: "demo_operator_priyanshu",
-        actorName: "Priyanshu",
+        actorId: "demo_operator_khushi",
+        actorName: "Khushi Diwan",
         requestId: mutationRequestId(request, "approve"),
       },
     });

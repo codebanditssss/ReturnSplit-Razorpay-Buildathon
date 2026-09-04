@@ -285,7 +285,7 @@ function recordCaseNote(note: string, recordedAt: string): DemoCaseNote {
   const normalized = normalizeCaseNote(note);
   return {
     recordedAt,
-    actor: "Priyanshu",
+    actor: "Khushi Diwan",
     redactedText: redactCaseNote(normalized),
     sha256: createHash("sha256").update(normalized, "utf8").digest("hex"),
   };
@@ -446,7 +446,7 @@ export async function getDemoClaimView(claimId: string): Promise<Claim | undefin
     execution: {
       sagaId: `saga_${claim.id}`,
       state: "completed",
-      approvedBy: "Priyanshu",
+      approvedBy: "Khushi Diwan",
       approvedAt: completion.approvedAt,
       completedAt: completion.completedAt,
       requestId: completion.requestId,
@@ -539,7 +539,7 @@ export function recordDemoClaimPreflight({
     claimId,
     orderId: claim.orderId,
     occurredAt: checkedAtIso,
-    actor: "Priyanshu",
+    actor: "Khushi Diwan",
     summary: result.outcome === "verified"
       ? "Verified the current provider balances against the reviewed plan"
       : result.outcome === "mismatch"
@@ -664,7 +664,7 @@ export function resolveDemoClaimReview(
       flags: issues.map(issueFlag),
       evidence: [
         ...claim.review.evidence,
-        { source: "claim", label: "Human review decision", quote: `${decisionSummary} by Priyanshu.` },
+        { source: "claim", label: "Human review decision", quote: `${decisionSummary} by Khushi Diwan.` },
       ],
     },
   };
@@ -691,7 +691,7 @@ export function resolveDemoClaimReview(
       updatedAt: calculatedAt,
       requestId,
       lastRequestId: requestId,
-      actor: "Priyanshu",
+      actor: "Khushi Diwan",
       queue: "recovery_operations",
       owner: "Recovery Operations",
       dueAt: new Date(now.getTime() + 48 * 60 * 60 * 1_000).toISOString(),
@@ -732,7 +732,7 @@ export function resolveDemoClaimReview(
     claimId: claim.id,
     orderId: claim.orderId,
     occurredAt: calculatedAt,
-    actor: "Priyanshu",
+    actor: "Khushi Diwan",
     summary: `${decisionSummary} · ${isReady ? "new approval plan created" : isBlocked ? "approval blocked" : "review remains open"}`,
     requestId,
     metadata: {
@@ -822,7 +822,7 @@ export function updateDemoRecoveryCase(
     claimId,
     orderId: claim.orderId,
     occurredAt: updatedAt,
-    actor: "Priyanshu",
+    actor: "Khushi Diwan",
     summary: updated.status === "closed"
       ? `Closed recovery case ${updated.caseId} after fully reconciling the marketplace-funded amount`
       : `Updated recovery case ${updated.caseId}; further recovery work remains open`,
@@ -883,7 +883,7 @@ export async function escalateDemoClaim(
     updatedAt: createdAt,
     requestId,
     lastRequestId: requestId,
-    actor: "Priyanshu",
+    actor: "Khushi Diwan",
     queue: evidenceRequest ? "claims_review" : "payments_reconciliation",
     owner: evidenceRequest ? "Customer Support" : "Payments Operations",
     dueAt: new Date(now.getTime() + (evidenceRequest ? 24 : 4) * 60 * 60 * 1_000).toISOString(),

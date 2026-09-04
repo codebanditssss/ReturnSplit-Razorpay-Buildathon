@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ClaimsTable, type ClaimRow } from "@/components/claims-table";
 import { Money, PageHeader } from "@/components/ui";
-import { Mascot } from "@/components/mascot";
 import { Icon } from "@/components/icons";
 import { SyncProviderButton } from "@/components/sync-provider-button";
 import { claimOperationPresentation } from "@/lib/claim-operation-presentation";
@@ -16,7 +15,9 @@ import {
 export const metadata: Metadata = { title: "Claims" };
 export const dynamic = "force-dynamic";
 
-export default async function ClaimsPage() {
+export default async function ClaimsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const resolvedSearchParams = await searchParams;
+  const initialQuery = Array.isArray(resolvedSearchParams.q) ? resolvedSearchParams.q[0] ?? "" : resolvedSearchParams.q ?? "";
   const currentClaims = await getDemoClaimsView();
   const asOfDate = new Date();
   const asOf = asOfDate.toISOString();
@@ -81,16 +82,13 @@ export default async function ClaimsPage() {
   return (
     <div className="page">
       <PageHeader title="Claims" description="Review who funds each approved return before money moves." actions={<SyncProviderButton />} />
-      <section className="welcome-card" aria-label="Queue summary">
-        <div className="welcome-copy">
-          <p className="eyebrow">Operator overview</p>
-          <h2>{balanced ? "Every open work item is balanced." : `${attention} work item${attention === 1 ? "" : "s"} need${attention === 1 ? "s" : ""} attention.`}</h2>
-          <p>
-            <strong>{ready}</strong> ready to approve · <strong>{open.length}</strong> open across claims and post-refund recovery.
-            Reversals stay behind human approval - nothing moves until you say so.
-          </p>
+      <section className="queue-brief" aria-label="Queue summary">
+        <div className="queue-brief-copy">
+          <p className="eyebrow">Queue snapshot</p>
+          <h2>{balanced ? "No work items need intervention" : `${attention} work item${attention === 1 ? "" : "s"} require operator action`}</h2>
+          <p><strong>{ready}</strong> ready for approval · <strong>{open.length}</strong> open across claims and post-refund recovery · every money movement remains approval-gated.</p>
         </div>
-        <div className="welcome-mascot"><Mascot /></div>
+        <div className="queue-brief-state"><Icon name="shield" /><span><strong>Controls active</strong><small>Simulation · no live money</small></span></div>
       </section>
       <section className="metric-strip" aria-label="Queue overview">
         <div className="metric"><div className="metric-head"><span className="metric-label">Open work</span><span className="metric-ico"><Icon name="inbox" /></span></div><strong className="metric-value">{open.length}</strong><span className="metric-note">Claims and post-refund recovery</span></div>
@@ -98,7 +96,7 @@ export default async function ClaimsPage() {
         <div className="metric"><div className="metric-head"><span className="metric-label">Needs attention</span><span className="metric-ico"><Icon name="circle-alert" /></span></div><strong className="metric-value">{attention}</strong><span className="metric-note">Review, retry, reconciliation, or recovery</span></div>
         <div className="metric"><div className="metric-head"><span className="metric-label">Platform exposure</span><span className="metric-ico"><Icon name="shield" /></span></div><strong className="metric-value"><Money paise={exposure} /></strong><span className="metric-note">Commitments plus outstanding recovery</span></div>
       </section>
-      <ClaimsTable claims={rows} providerLabel={provider.mode === "demo" ? "Simulation" : "Razorpay Test Mode"} asOf={asOf} />
+      <ClaimsTable key={initialQuery} claims={rows} providerLabel={provider.mode === "demo" ? "Simulation" : "Razorpay Test Mode"} asOf={asOf} initialQuery={initialQuery} />
     </div>
   );
 }

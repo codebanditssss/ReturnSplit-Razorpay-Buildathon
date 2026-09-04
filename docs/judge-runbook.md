@@ -124,7 +124,7 @@ Show the customer quote, matched kurta, policy citation, and exact plan:
 | Movement | Expected amount |
 | --- | ---: |
 | Aavya Textiles transfer reversal | ₹1,979.26 |
-| Mora Market contribution | ₹349.28 |
+| Creo Market contribution | ₹349.28 |
 | Customer refund | ₹2,328.54 |
 | Outbound shipping refund | ₹0.00 |
 

@@ -161,13 +161,13 @@ test("explicit retry resumes a retryable failure without repeating successful st
 
   const retried = await executeApprovedRefund({
     ...fixture,
-    approval: { ...fixture.approval, actorId: "usr_priyanshu", actorName: "Priyanshu", requestId: "req_retry_002" },
+    approval: { ...fixture.approval, actorId: "usr_khushi", actorName: "Khushi Diwan", requestId: "req_retry_002" },
   });
   assert.equal(retried.state, "completed");
   assert.equal(retried.reversals[0].attempts, 2);
   assert.equal(retried.refund.attempts, 1);
   assert.equal(retried.lastRequestId, "req_retry_002");
-  assert.ok(retried.audit.some((entry) => entry.action === "execution_resume_requested" && entry.actor === "Priyanshu" && entry.requestId === "req_retry_002"));
+  assert.ok(retried.audit.some((entry) => entry.action === "execution_resume_requested" && entry.actor === "Khushi Diwan" && entry.requestId === "req_retry_002"));
 });
 
 test("requires a named human approval and an override reason", async () => {

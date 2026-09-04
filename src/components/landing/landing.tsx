@@ -57,33 +57,6 @@ function Reveal({ children, style, delay }: { children: React.ReactNode; style?:
   );
 }
 
-/* subtle pointer-driven 3D tilt (desktop + motion-ok only) */
-function useTilt<T extends HTMLElement>(strength = 3.2) {
-  const ref = useRef<T>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof window === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (!window.matchMedia("(pointer: fine)").matches) return;
-    let raf = 0;
-    const onMove = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width - 0.5;
-      const py = (e.clientY - r.top) / r.height - 0.5;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        el.style.setProperty("--ry", `${px * strength}deg`);
-        el.style.setProperty("--rx", `${-py * strength}deg`);
-      });
-    };
-    const reset = () => { el.style.setProperty("--ry", "0deg"); el.style.setProperty("--rx", "0deg"); };
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerleave", reset);
-    return () => { el.removeEventListener("pointermove", onMove); el.removeEventListener("pointerleave", reset); cancelAnimationFrame(raf); };
-  }, [strength]);
-  return ref;
-}
-
 /* ---------- icons ---------- */
 const I = {
   arrowLeft: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>,
@@ -113,38 +86,25 @@ const MARKET = 34928;     // ₹349.28 marketplace contribution
 /* code sample rendered from tokens so no literal braces sit in JSX text */
 type Tok = { t: string; c?: string };
 const CODE: Tok[][] = [
-  [{ t: "// conceptual flow - not a shipped SDK", c: "c" }],
+  [{ t: "const", c: "k" }, { t: " claimId " }, { t: "=", c: "k" }, { t: " " }, { t: "\"RET-260903-031\"", c: "s" }, { t: ";" }],
+  [{ t: "const", c: "k" }, { t: " endpoint " }, { t: "=", c: "k" }, { t: " " }, { t: "`/api/claims/${claimId}/preflight`", c: "s" }, { t: ";" }],
   [],
-  [{ t: "const", c: "k" }, { t: " plan " }, { t: "=", c: "k" }, { t: " " }, { t: "await", c: "k" }, { t: " returnsplit." }, { t: "plan", c: "fn" }, { t: "({" }],
-  [{ t: "  claim", c: "n" }, { t: ": " }, { t: "\"RET-260903-031\"", c: "s" }, { t: "," }],
-  [{ t: "  returnedLines", c: "n" }, { t: ": [{ sku: " }, { t: "\"indigo-kurta\"", c: "s" }, { t: ", qty: " }, { t: "1", c: "n" }, { t: " }]," }],
+  [{ t: "// Re-fetch provider state before approval", c: "c" }],
+  [{ t: "const", c: "k" }, { t: " check " }, { t: "=", c: "k" }, { t: " " }, { t: "await", c: "k" }, { t: " " }, { t: "fetch", c: "fn" }, { t: "(endpoint, {" }],
+  [{ t: "  method", c: "n" }, { t: ": " }, { t: "\"POST\"", c: "s" }, { t: "," }],
+  [{ t: "  body", c: "n" }, { t: ": JSON.stringify({ expectedPlanFingerprint })," }],
   [{ t: "});" }],
   [],
-  [{ t: "// balanced, integer paise - nothing has moved yet", c: "c" }],
-  [{ t: "plan." }, { t: "customerRefundPaise", c: "n" }, { t: ";  " }, { t: "// 232854", c: "c" }],
-  [{ t: "plan." }, { t: "reversals", c: "n" }, { t: ";  " }, { t: "// aavya reversal: 197926", c: "c" }],
-  [{ t: "plan." }, { t: "marketplaceFundedPaise", c: "n" }, { t: ";  " }, { t: "// 34928", c: "c" }],
-  [],
-  [{ t: "await", c: "k" }, { t: " returnsplit." }, { t: "execute", c: "fn" }, { t: "(plan." }, { t: "id", c: "n" }, { t: ", {" }],
-  [{ t: "  approvedBy", c: "n" }, { t: ": operator,  " }, { t: "// fingerprint-bound", c: "c" }],
-  [{ t: "});" }],
-];
-
-/* marquee content - seeded demo fixtures + amounts */
-const TICKER: React.ReactNode[] = [
-  <><b>RET-260903-031</b> demo reversal <span className="t">₹1,979.26</span> → Aavya Textiles</>,
-  <><b>RET-260831-024</b> demo completed <span className="t">₹1,499.00</span> → Field Notes</>,
-  <>Σ reversals + platform = customer refund</>,
-  <><b>RET-260903-038</b> <span className="g">shortfall</span> · only ₹49.15 reversible</>,
-  <><b>MM-18472</b> Aavya Textiles + Noya Footwear · buyer keeps the sneakers</>,
-  <>64 / 64 synthetic fixtures · 0 unsafe automations · ₹0 wrong-seller overage</>,
+  [{ t: "if", c: "k" }, { t: " (!check.ok) " }, { t: "return", c: "k" }, { t: " " }, { t: "\"fail_closed\"", c: "s" }, { t: ";" }],
+  [{ t: "// Approval uses the same reviewed fingerprint", c: "c" }],
+  [{ t: "// and executes through the server-side saga.", c: "c" }],
 ];
 
 /* ---------- control-surface states (one seeded demo claim, RET-260903-031) ---------- */
-type SurfaceStep = { tag: string; tone: string; title: string; body: React.ReactNode };
+type SurfaceStep = { tag: string; tone: string; title: string; state: string; body: React.ReactNode };
 const STEPS: SurfaceStep[] = [
-  { tag: "Evidence", tone: "blue", title: "Return logged", body: <>Order <b>MM-18472</b> · 2 items across Aavya + Noya · precomputed returned-line and reason fixture.</> },
-  { tag: "Split", tone: "gold", title: "Refund apportioned", body: <>
+  { tag: "Evidence", tone: "blue", title: "Return logged", state: "evidence_received", body: <>Order <b>MM-18472</b> · 2 items across Aavya + Noya · precomputed returned-line and reason fixture.</> },
+  { tag: "Split", tone: "gold", title: "Refund apportioned", state: "plan_balanced", body: <>
     <b>₹2,328.54</b> refund resolves to <b>₹1,979.26</b> seller reversal + <b>₹349.28</b> platform contribution, in integer paise.
     <span className="lp-splitbar" aria-hidden>
       <span className="lp-splitseg rev" style={{ width: "85%" }} />
@@ -155,9 +115,9 @@ const STEPS: SurfaceStep[] = [
       <span className="con"><i />Platform · <b>₹349.28</b> · 15%</span>
     </span>
   </> },
-  { tag: "Reverse", tone: "green", title: "Route reversal drafted", body: <>The plan targets <b>₹1,979.26</b> against Aavya Textiles&rsquo; seeded Route transfer; after approval, execution records intent and a stable receipt before submission.</> },
-  { tag: "Approve", tone: "green", title: "Human approval held", body: <>Nothing moves until a named operator signs off; the exact plan fingerprint is bound to that approval.</> },
-  { tag: "Reconcile", tone: "green", title: "Simulated and closed", body: <>The simulator confirms the seller reversal before the customer refund · balanced to the paise.</> },
+  { tag: "Reverse", tone: "green", title: "Route reversal drafted", state: "reversal_prepared", body: <>The plan targets <b>₹1,979.26</b> against Aavya Textiles&rsquo; seeded Route transfer; after approval, execution records intent and a stable receipt before submission.</> },
+  { tag: "Approve", tone: "green", title: "Human approval held", state: "ready_for_approval", body: <>Nothing moves until a named operator signs off; the exact plan fingerprint is bound to that approval.</> },
+  { tag: "Reconcile", tone: "green", title: "Simulated and closed", state: "completed", body: <>The simulator confirms the seller reversal before the customer refund · balanced to the paise.</> },
 ];
 
 /* ---------- hero product panel: faithful mini-workbench ---------- */
@@ -166,11 +126,10 @@ function Workbench() {
   const total = useCountUp(CUSTOMER, seen);
   const aavya = useCountUp(AAVYA, seen);
   const market = useCountUp(MARKET, seen);
-  const tilt = useTilt<HTMLDivElement>();
   return (
     <div className="lp-frame-wrap" ref={ref}>
       <div className="lp-frame-glow" />
-      <div className="lp-frame" ref={tilt}>
+      <div className="lp-frame">
         <div className="lp-wb">
           <aside className="lp-wb-side">
             <div className="lp-wb-brand"><Mark />ReturnSplit</div>
@@ -192,7 +151,7 @@ function Workbench() {
               <h4>Return claim RET-260903-031</h4>
               <span className="lp-pill green">Ready for approval</span>
             </div>
-            <div className="lp-wb-meta">Order MM-18472 · Maya Rao · Received 3 Sep 2026 · Mora Supplier Terms v3.2 §7.3</div>
+            <div className="lp-wb-meta">Order MM-18472 · Maya Rao · Received 3 Sep 2026 · Creo Market Returns v3.2 §7.3</div>
             <div className="lp-wb-grid">
               <div className="lp-mm">
                 <div className="lp-mm-h">Money movement</div>
@@ -245,7 +204,7 @@ function ControlReport() {
   return (
     <div className="lp-report" ref={ref}>
       <div className="lp-report-bar">
-        <span>returnsplit-engine · control-set v2 · 64 synthetic records</span>
+        <span>returnsplit-engine · deterministic control set · 64 records</span>
         <span className="pass">PASS</span>
       </div>
       <div className="lp-report-body">
@@ -302,6 +261,7 @@ export function Landing() {
   const [dir, setDir] = useState<"up" | "down">("up");
   const [prog, setProg] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
+  const [activeStep, setActiveStep] = useState(1);
   useEffect(() => {
     let last = window.scrollY;
     let ticking = false;
@@ -356,7 +316,7 @@ export function Landing() {
       <header className="lp-hero" id="top">
         <div className="lp-dots" />
         <div className="lp-wrap lp-hero-inner">
-          <span className="lp-eyebrow">Razorpay Route · partial marketplace refunds</span>
+          <span className="lp-eyebrow">Track 04 finance control · working test-mode prototype</span>
           <h1>
             <span>One item comes back.</span>
             <span>Reverse the <em>exact</em> transfer.</span>
@@ -379,18 +339,12 @@ export function Landing() {
         <div className="lp-wrap"><Workbench /></div>
       </header>
 
-      {/* marquee */}
-      <div className="lp-marquee" aria-hidden>
-        <div className="lp-marq-track">
-          {[0, 1].map((dup) => (
-            <div className="lp-marq-item" key={dup}>
-              {TICKER.map((node, i) => (
-                <span key={i}>
-                  {node}<span className="lp-marq-sep">/</span>
-                </span>
-              ))}
-            </div>
-          ))}
+      <div className="lp-evidence-rail" aria-label="Prototype evidence">
+        <div className="lp-wrap lp-evidence-grid">
+          <span><i />Working demo</span>
+          <span><b>64 / 64</b> control fixtures</span>
+          <span><b>₹0</b> wrong-seller allocation</span>
+          <span>Deterministic test provider</span>
         </div>
       </div>
 
@@ -411,23 +365,49 @@ export function Landing() {
                 <span className="lp-surface-id">{I.scroll}RET-260903-031</span>
                 <span className="lp-surface-live"><span className="lp-fan-dot" />Simulation · reversal before refund · <b>replayable</b></span>
               </div>
-              <ol className="lp-surface-rail">
-                {STEPS.map((s, i) => {
-                  const last = i === STEPS.length - 1;
-                  return (
-                    <li className={`lp-srow${last ? " done" : ""}`} style={{ "--i": i } as React.CSSProperties} key={s.tag}>
-                      <span className="lp-srow-node">{last ? I.check : i + 1}</span>
-                      <div className="lp-srow-main">
-                        <div className="lp-srow-head">
-                          <span className={`lp-fcard-tag ${s.tone}`}>{s.tag}</span>
-                          <span className="lp-srow-title">{s.title}</span>
-                        </div>
-                        <div className="lp-srow-body">{s.body}</div>
-                      </div>
+              <div className="lp-surface-metrics" aria-label="Claim summary">
+                <span><small>Refund</small><b>₹2,328.54</b></span>
+                <span><small>Seller reversal</small><b>₹1,979.26</b></span>
+                <span><small>Platform share</small><b>₹349.28</b></span>
+              </div>
+              <div className="lp-surface-workspace">
+                <ol className="lp-surface-rail" aria-label="Claim replay steps">
+                  {STEPS.map((s, i) => (
+                    <li className={`lp-srow${activeStep === i ? " active" : ""}`} key={s.tag}>
+                      <button type="button" onClick={() => setActiveStep(i)} aria-label={`${s.tag}: ${s.title}`} aria-pressed={activeStep === i}>
+                        <span className="lp-srow-node">{i < activeStep ? I.check : i + 1}</span>
+                        <span className="lp-srow-main">
+                          <span className="lp-srow-head">
+                            <span className={`lp-fcard-tag ${s.tone}`}>{s.tag}</span>
+                            <span className="lp-srow-title">{s.title}</span>
+                          </span>
+                          <code>{s.state}</code>
+                        </span>
+                      </button>
                     </li>
-                  );
-                })}
-              </ol>
+                  ))}
+                </ol>
+                <aside className="lp-surface-drawer" aria-live="polite">
+                  <div className="lp-drawer-head">
+                    <span>Step {String(activeStep + 1).padStart(2, "0")} / 05</span>
+                    <span className={`lp-fcard-tag ${STEPS[activeStep].tone}`}>{STEPS[activeStep].tag}</span>
+                  </div>
+                  <div className="lp-drawer-body" key={activeStep}>
+                    <span className="lp-eyebrow">Replay evidence</span>
+                    <h3>{STEPS[activeStep].title}</h3>
+                    <div className="lp-drawer-copy">{STEPS[activeStep].body}</div>
+                    <dl className="lp-drawer-facts">
+                      <div><dt>Environment</dt><dd>Test mode</dd></div>
+                      <div><dt>Order</dt><dd>MM-18472</dd></div>
+                      <div><dt>Policy</dt><dd>Creo Market v3.2</dd></div>
+                    </dl>
+                  </div>
+                  <div className="lp-drawer-actions">
+                    <button type="button" onClick={() => setActiveStep((activeStep + STEPS.length - 1) % STEPS.length)}>{I.arrowLeft} Previous</button>
+                    <button type="button" onClick={() => setActiveStep((activeStep + 1) % STEPS.length)}>Next step {I.arrow}</button>
+                  </div>
+                </aside>
+              </div>
             </div>
           </Reveal>
         </div>
@@ -543,7 +523,7 @@ export function Landing() {
                 <span className="lp-cell-idx">04</span>
                 <div className="lp-cell-t">{I.scroll}<h3>Process-local audit history</h3></div>
                 <div className="lp-tl">
-                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Plan frozen<small>Priyanshu · 08:57</small></span></div>
+                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Plan frozen<small>Khushi Diwan · 08:57</small></span></div>
                   <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Demo transfer reversed<small>masked simulator reference</small></span></div>
                   <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Demo refund completed<small>simulator status recorded</small></span></div>
                 </div>
@@ -566,7 +546,7 @@ export function Landing() {
                   <p>The prototype implements Razorpay Route simulation and an optional Test Mode adapter. Stripe Connect
                     and Cashfree are roadmap research; no adapters are included.</p>
                 </div>
-                <span className="lp-tag">ON THE ROADMAP</span>
+                <span className="lp-tag">PROPOSED ROADMAP · NOT IMPLEMENTED</span>
               </div>
             </div>
           </Reveal>
@@ -595,10 +575,10 @@ export function Landing() {
         <div className="lp-wrap lp-codewrap">
           <Reveal>
             <div className="lp-section-head">
-              <span className="lp-eyebrow sq">For developers</span>
+              <span className="lp-eyebrow sq">Engine contract</span>
               <h2>Plan first. Execute after approval.</h2>
-              <p>This conceptual API sketch shows the control boundary: calculate a frozen, balanced plan, bind a named
-                operator&rsquo;s approval, then enforce reversal-before-refund ordering. Demo state is process-local.</p>
+              <p>The workbench posts the reviewed fingerprint to its same-origin preflight route before approval, then
+                enforces reversal-before-refund ordering. Demo state is process-local.</p>
               <div className="lp-hero-actions" style={{ justifyContent: "flex-start", marginTop: 24 }}>
                 <Link className="lp-btn lp-btn-ghost" href="/claims">Explore the workbench {I.arrow}</Link>
               </div>
@@ -625,7 +605,7 @@ export function Landing() {
           <div className="lp-faq-left">
             <span className="lp-eyebrow sq">FAQ</span>
             <h2>Questions? Answered.</h2>
-            <p>Still stuck? Contact the team at <a href="mailto:hello@returnsplit.dev">hello@returnsplit.dev</a>.</p>
+            <p>Start with the <Link href="/claims/RET-260903-031">golden claim</Link>, then inspect the <Link href="/evaluation">evaluation snapshot</Link>.</p>
           </div>
           <div className="lp-faq-list">
             {FAQS.map((f, i) => (
@@ -661,25 +641,18 @@ export function Landing() {
               <a className="lp-word lg" href="#top">Return<span className="s">Split</span></a>
               <p>A financial-control prototype for reviewable marketplace return reversals on Razorpay Route.</p>
             </div>
-            <div className="lp-footer-col">
-              <h5>Product</h5>
-              <a href="#how">How it works</a>
-              <a href="#features">Control</a>
-              <a href="#assurance">Assurance</a>
+            <div className="lp-footer-links" aria-label="Footer links">
               <Link href="/claims">Workbench</Link>
-            </div>
-            <div className="lp-footer-col">
-              <h5>Developers</h5>
-              <a href="#developers">Control flow</a>
-              <a href="https://razorpay.com/docs/payments/route/" target="_blank" rel="noreferrer">Route docs</a>
               <Link href="/evaluation">Evaluation</Link>
+              <a href="#developers">Engine contract</a>
+              <a href="https://razorpay.com/docs/payments/route/" target="_blank" rel="noreferrer">Route docs</a>
             </div>
-            <div className="lp-footer-col">
-              <h5>Company</h5>
-              <Link href="/claims">Open workbench</Link>
-              <a href="mailto:hello@returnsplit.dev">Get in touch</a>
-              <a href="#faq">FAQ</a>
-            </div>
+          </div>
+          <div className="lp-footer-status">
+            <span><i /> Test mode</span>
+            <span>Deterministic demo data</span>
+            <span>No live money moves</span>
+            <span>Evaluation snapshot available</span>
           </div>
           <div className="lp-footer-note">
             <span>Demo figures use a deterministic simulator; an optional Razorpay Test Mode adapter is available. Live keys are rejected, no live money moves, and ReturnSplit never holds funds.</span>

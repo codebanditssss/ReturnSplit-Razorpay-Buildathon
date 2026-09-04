@@ -481,7 +481,7 @@ function buildLimitations(
   ];
   if (datasetKind === "synthetic_demo") {
     limitations.push(
-      "The bundled Mora Market series is synthetic; its metrics are engineering checks, not model-accuracy evidence.",
+      "The bundled Creo Market series is synthetic; its metrics are engineering checks, not model-accuracy evidence.",
     );
   } else {
     limitations.push(

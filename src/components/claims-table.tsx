@@ -61,9 +61,9 @@ function rowPriority(claim: ClaimRow): number {
   return operationPriority[claimOperationPresentation(claim).kind];
 }
 
-export function ClaimsTable({ claims, providerLabel, asOf }: { claims: readonly ClaimRow[]; providerLabel: string; asOf: ISODateTime }) {
+export function ClaimsTable({ claims, providerLabel, asOf, initialQuery = "" }: { claims: readonly ClaimRow[]; providerLabel: string; asOf: ISODateTime; initialQuery?: string }) {
   const [filter, setFilter] = useState<Filter>("open");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [showFilters, setShowFilters] = useState(false);
 
   const matchingClaims = useMemo(() => {
@@ -105,7 +105,7 @@ export function ClaimsTable({ claims, providerLabel, asOf }: { claims: readonly 
 
   return (
     <>
-      <div className="toolbar">
+      <div className="toolbar queue-toolbar">
         <div className="tabs" role="group" aria-label="Claim status filters">
           {tabs.map(([value, label]) => {
             const count = counts[value];
@@ -148,8 +148,8 @@ export function ClaimsTable({ claims, providerLabel, asOf }: { claims: readonly 
 
 function liabilityLabel(value: LiabilityParty) {
   if (value === "seller") return "Seller + marketplace";
-  if (value === "marketplace") return "Mora Market";
-  if (value === "courier") return "Mora Market advance";
+  if (value === "marketplace") return "Creo Market";
+  if (value === "courier") return "Creo Market advance";
   if (value === "customer") return "Customer";
   return "Unresolved";
 }

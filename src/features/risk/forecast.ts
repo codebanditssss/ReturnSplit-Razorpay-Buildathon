@@ -25,7 +25,7 @@ export interface ForecastResponse {
 const DEMO_HISTORY_START = "2026-07-10";
 const DEMO_GENERATED_AT = "2026-09-04T00:00:00.000Z";
 
-// Synthetic daily approved-refund totals for the Mora Market demo workspace.
+// Synthetic daily approved-refund totals for the Creo Market demo workspace.
 // The series is generated from fixed weekday and cycle values; it is not a
 // production observation and contains no customer data.
 const WEEKDAY_BASE_PAISE = [

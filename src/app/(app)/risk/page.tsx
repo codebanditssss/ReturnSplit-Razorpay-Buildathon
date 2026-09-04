@@ -14,7 +14,7 @@ export default async function RiskPage() {
   return <RiskForecast
     initial={await getRefundForecast({ horizon: 14, isIllustrative: true })}
     reservePaise={hasConfiguredReserve ? configuredReserve : 40_000_000}
-    reserveSource={hasConfiguredReserve ? "REFUND_RESERVE_PAISE environment setting" : "Mora Market demo scenario default"}
+    reserveSource={hasConfiguredReserve ? "REFUND_RESERVE_PAISE environment setting" : "Creo Market demo scenario default"}
     openExposure={openExposure}
   />;
 }

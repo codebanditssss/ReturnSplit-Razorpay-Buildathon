@@ -40,7 +40,7 @@ seasonal-naive baseline and a last-value baseline. The JSON report includes:
 - a SHA-256 dataset fingerprint, cutoff windows, protocol settings, and an
   explicit non-production release gate.
 
-The default input is the 56-day synthetic Mora Market series and the latest
+The default input is the 56-day synthetic Creo Market series and the latest
 five eligible origins per horizon. Its results are illustrative engineering
 checks, never production accuracy. The Evaluation page includes a dated summary
 of the latest strict run so judges can inspect the evidence without treating it

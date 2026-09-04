@@ -75,7 +75,7 @@ test("mutation and webhook routes return 413 without accepting oversized bodies"
   const escalationResponse = await escalateClaim(postRequest(
     "http://localhost/api/claims/RET-260903-038/escalate",
     "http://localhost",
-    JSON.stringify({ kind: "evidence_request", rationale: "x".repeat(MAX_MUTATION_BODY_BYTES) }),
+    JSON.stringify({ padding: "x".repeat(MAX_MUTATION_BODY_BYTES) }),
   ), { params: Promise.resolve({ id: "RET-260903-038" }) });
   assert.equal(escalationResponse.status, 413);
 

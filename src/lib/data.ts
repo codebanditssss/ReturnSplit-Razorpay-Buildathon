@@ -25,10 +25,10 @@ export const sellers: readonly Seller[] = [
 
 export const policies: readonly Policy[] = [
   {
-    id: "policy_mora_supplier_v3_2",
-    name: "Mora Supplier Terms",
+    id: "policy_creo_supplier_v3_2",
+    name: "Creo Market Returns",
     version: "3.2",
-    citation: "Mora Supplier Terms v3.2 · §7.3",
+    citation: "Creo Market Returns v3.2 · §7.3",
     effectiveFrom: "2026-07-01",
     summary: "Manufacturing defects are funded by the seller at net settled item value; transit damage requires a separate funding and recovery decision. Outbound shipping is not refunded on a partial return.",
     rules: {
@@ -40,10 +40,10 @@ export const policies: readonly Policy[] = [
     },
   },
   {
-    id: "policy_mora_supplier_v3_1",
-    name: "Mora Supplier Terms",
+    id: "policy_creo_supplier_v3_1",
+    name: "Creo Market Returns",
     version: "3.1",
-    citation: "Mora Supplier Terms v3.1 · §7.2",
+    citation: "Creo Market Returns v3.1 · §7.2",
     effectiveFrom: "2026-01-01",
     effectiveTo: "2026-06-30",
     summary: "Superseded supplier return policy retained for order-date auditability.",
@@ -77,7 +77,7 @@ export const orders: readonly Order[] = [
     merchandiseSubtotalPaise: 439800,
     shippingPaise: 9900,
     orderDiscountPaise: 30000,
-    policyId: "policy_mora_supplier_v3_2",
+    policyId: "policy_creo_supplier_v3_2",
     lines: [
       { id: "line_mm18472_kurta", title: "Indigo handblock kurta", variant: "Size M", quantity: 1, unitPricePaise: 249900, sellerId: "seller_aavya", transferId: "trf_mm18472_aavya" },
       { id: "line_mm18472_shoes", title: "Everyday sneakers", variant: "Size 6", quantity: 1, unitPricePaise: 189900, sellerId: "seller_noya", transferId: "trf_mm18472_noya" },
@@ -99,7 +99,7 @@ export const orders: readonly Order[] = [
     merchandiseSubtotalPaise: 359800,
     shippingPaise: 0,
     orderDiscountPaise: 0,
-    policyId: "policy_mora_supplier_v3_2",
+    policyId: "policy_creo_supplier_v3_2",
     lines: [
       { id: "line_mm18489_sand", title: "Linen camp shirt", variant: "Sand · M", quantity: 1, unitPricePaise: 179900, sellerId: "seller_loom", transferId: "trf_mm18489_loom" },
       { id: "line_mm18489_stone", title: "Linen camp shirt", variant: "Stone · M", quantity: 1, unitPricePaise: 179900, sellerId: "seller_loom", transferId: "trf_mm18489_loom" },
@@ -120,7 +120,7 @@ export const orders: readonly Order[] = [
     merchandiseSubtotalPaise: 279900,
     shippingPaise: 9900,
     orderDiscountPaise: 0,
-    policyId: "policy_mora_supplier_v3_2",
+    policyId: "policy_creo_supplier_v3_2",
     lines: [
       { id: "line_mm18501_lamp", title: "Fluted ceramic lamp", variant: "Chalk", quantity: 1, unitPricePaise: 279900, sellerId: "seller_kaia", transferId: "trf_mm18501_kaia" },
     ],
@@ -140,7 +140,7 @@ export const orders: readonly Order[] = [
     merchandiseSubtotalPaise: 99900,
     shippingPaise: 0,
     orderDiscountPaise: 0,
-    policyId: "policy_mora_supplier_v3_2",
+    policyId: "policy_creo_supplier_v3_2",
     lines: [
       { id: "line_mm18518_vase", title: "Speckled clay vase", quantity: 1, unitPricePaise: 99900, sellerId: "seller_mitti", transferId: "trf_mm18518_mitti" },
     ],
@@ -160,7 +160,7 @@ export const orders: readonly Order[] = [
     merchandiseSubtotalPaise: 159900,
     shippingPaise: 0,
     orderDiscountPaise: 10000,
-    policyId: "policy_mora_supplier_v3_2",
+    policyId: "policy_creo_supplier_v3_2",
     lines: [
       { id: "line_mm18394_tote", title: "Canvas market tote", variant: "Olive", quantity: 1, unitPricePaise: 159900, sellerId: "seller_field", transferId: "trf_mm18394_field" },
     ],
@@ -180,7 +180,7 @@ export const orders: readonly Order[] = [
     merchandiseSubtotalPaise: 219800,
     shippingPaise: 0,
     orderDiscountPaise: 0,
-    policyId: "policy_mora_supplier_v3_2",
+    policyId: "policy_creo_supplier_v3_2",
     lines: [
       { id: "line_mm18527_scarf", title: "Handwoven cotton scarf", variant: "Indigo", quantity: 1, unitPricePaise: 119900, sellerId: "seller_aavya", transferId: "trf_mm18527_aavya" },
       { id: "line_mm18527_sling", title: "Mini canvas sling", variant: "Moss", quantity: 1, unitPricePaise: 99900, sellerId: "seller_field", transferId: "trf_mm18527_field" },
@@ -243,7 +243,7 @@ const goldenReview = readyReview({
   explanation: "The torn seam maps to the kurta and §7.3 assigns the net settled item value to Aavya Textiles. Outbound shipping stays with the customer on this partial return.",
   evidence: [
     { source: "claim", label: "Customer statement", quote: "The blue kurta arrived with a torn seam near the sleeve. I’m keeping the shoes." },
-    { source: "policy", label: "Mora Supplier Terms v3.2 · §7.3", quote: "Manufacturing defect: seller funds net settled item value; marketplace returns commission; outbound shipping is not refunded on partial return." },
+    { source: "policy", label: "Creo Market Returns v3.2 · §7.3", quote: "Manufacturing defect: seller funds net settled item value; marketplace returns commission; outbound shipping is not refunded on partial return." },
   ],
 });
 const goldenPlan = planFor({ id: "RET-260903-031", reason: "manufacturing_defect", returnedItems: goldenItems, review: goldenReview }, goldenOrder);
@@ -347,10 +347,10 @@ export const claims: readonly Claim[] = [
     review: readyReview({
       state: "needs_review",
       headline: "Choose who fronts this refund",
-      explanation: "The claim points to transit damage and possibly inadequate seller packaging. Mora Market can refund the customer now while recovery is reviewed separately.",
+      explanation: "The claim points to transit damage and possibly inadequate seller packaging. Creo Market can refund the customer now while recovery is reviewed separately.",
       extractionConfidence: 0.91,
       liability: "unresolved",
-      flags: [{ code: "liability_unclear", tone: "warning", label: "Funding decision required", detail: "Choose whether Mora Market should front the customer refund while recovery is reviewed." }],
+      flags: [{ code: "liability_unclear", tone: "warning", label: "Funding decision required", detail: "Choose whether Creo Market should front the customer refund while recovery is reviewed." }],
       evidence: [{ source: "claim", label: "Customer statement", quote: "The outer box was crushed… The inner wrap also looks thin." }],
     }),
   },

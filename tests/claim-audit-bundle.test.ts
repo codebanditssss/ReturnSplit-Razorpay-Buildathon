@@ -70,7 +70,7 @@ test("claim audit export is complete enough to inspect and excludes raw identifi
   assert.equal(bundle.kind, "returnsplit_redacted_claim_audit_bundle");
   assert.match(bundle.claim.claimEvidenceSha256, /^[a-f0-9]{64}$/);
   assert.match(bundle.decision.planFingerprint, /^[a-f0-9]{64}$/);
-  assert.equal(bundle.approval.actor, "Priyanshu");
+  assert.equal(bundle.approval.actor, "Khushi Diwan");
   assert.equal(bundle.execution.state, "completed");
   assert.ok(bundle.execution.events.length >= 4);
   const approvalEvent = bundle.execution.events.find((event) => event.action === "refund_plan_approved");

@@ -26,7 +26,7 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "ReturnSplit",
   description:
-    "A Razorpay Route financial-control prototype that computes exact per-seller paise, requires named human approval, and records a redacted, process-local audit history.",
+    "A working Razorpay Route financial-control prototype for exact per-seller paise, named human approval, retry-safe execution, and a redacted process-local audit trail.",
 };
 
 export default function Home() {

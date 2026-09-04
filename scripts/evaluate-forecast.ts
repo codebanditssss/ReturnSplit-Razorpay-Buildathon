@@ -152,7 +152,7 @@ async function loadDataset(inputPath?: string): Promise<EvaluationDataset> {
   if (!inputPath) {
     return {
       history: DEMO_REFUND_HISTORY.map((point) => ({ ...point })),
-      label: "mora-market-synthetic-demo-v1",
+      label: "creo-market-synthetic-demo-v1",
       kind: "synthetic_demo",
     };
   }
