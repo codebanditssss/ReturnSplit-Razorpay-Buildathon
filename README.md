@@ -12,6 +12,8 @@ Built for Razorpay AI Buildathon 2026, Track 04: AI Finance Controller.
 
 [![ReturnSplit landing page showing the partial-refund control workbench](docs/screenshots/landing-overview.png)](https://returnsplit.com)
 
+[Watch the 22-second product tour](public/demo/returnsplit-product-tour.mp4)
+
 ## Control loop
 
 1. Accept an approved claim with proposed returned-line and policy evidence. The included scenarios use precomputed extraction fixtures.
@@ -23,6 +25,12 @@ Built for Razorpay AI Buildathon 2026, Track 04: AI Finance Controller.
 7. Reconcile uncertain provider responses before retrying and expose a redacted claim audit bundle.
 
 The money path is deterministic. Models cannot choose liability, amounts, transfers, approval, or execution priority. TimesFM is isolated to aggregate refund-reserve planning.
+
+## AI where uncertainty belongs
+
+TimesFM forecasts aggregate refund exposure for the Reserve workspace across 7, 14, and 30-day horizons. The interface shows the forecast source, coverage, and uncertainty band, then falls back to a visibly labeled deterministic baseline if the sidecar is unavailable or returns an invalid response.
+
+That forecast helps finance teams plan cash. It cannot change seller ownership, policy liability, an individual claim amount, approval, or execution order. In short: **AI forecasts cash; deterministic controls protect money movement.**
 
 ## Evidence included in the repository
 
@@ -73,9 +81,9 @@ Live Razorpay keys are rejected by construction.
 
 ## Product walkthrough
 
-| Claims queue | Completed golden claim |
+| Claims queue | Golden claim review |
 | --- | --- |
-| ![Operator queue with review, blocked, retry, and approval states](docs/screenshots/claims-queue.png) | ![Completed refund with the seller reversal confirmed before the customer refund](docs/screenshots/golden-claim.png) |
+| ![Operator queue with review, blocked, retry, and approval states](docs/screenshots/claims-queue.png) | ![Golden claim review with the matched order line, policy decision, exact refund, and balance preflight](docs/screenshots/golden-claim.png) |
 
 | Control evaluation | Reserve planning |
 | --- | --- |

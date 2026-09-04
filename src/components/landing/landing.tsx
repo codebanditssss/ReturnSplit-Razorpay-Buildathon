@@ -1,32 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import "./landing.css";
 
 /* ---------- helpers ---------- */
-
-function useCountUp(target: number, run: boolean, ms = 1100) {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    if (!run) return;
-    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      const raf = requestAnimationFrame(() => setV(target));
-      return () => cancelAnimationFrame(raf);
-    }
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / ms);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setV(Math.round(target * eased));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, run, ms]);
-  return v;
-}
 
 function useInView<T extends HTMLElement>(threshold = 0.25) {
   const ref = useRef<T>(null);
@@ -80,108 +59,80 @@ function ProductTour() {
     <video
       ref={videoRef}
       className="lp-tour-video"
-      autoPlay
       muted
       loop
       playsInline
       preload="metadata"
-      poster="/demo/returnsplit-product-tour-poster.webp"
-      aria-label="A short tour of the ReturnSplit claims queue, claim review, orders, policies, evaluation, and activity views"
+      poster="/demo/returnsplit-product-tour-poster.webp?v=no-motion-1"
+      aria-label="A short tour of the ReturnSplit claims queue, claim review, orders, policies, reserve forecast, evaluation, and activity views"
     >
-      <source src="/demo/returnsplit-product-tour.mp4" type="video/mp4" />
+      <source src="/demo/returnsplit-product-tour.mp4?v=no-motion-1" type="video/mp4" />
+    </video>
+  );
+}
+
+function FeatureClip({ src, poster, label }: { src: string; poster: string; label: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reducedMotion.matches) {
+      video.pause();
+      video.currentTime = 0;
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) void video.play().catch(() => undefined);
+      else video.pause();
+    }, { threshold: 0.25 });
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      className="lp-feature-video"
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      poster={poster}
+      aria-label={label}
+    >
+      <source src={src} type="video/mp4" />
     </video>
   );
 }
 
 /* ---------- icons ---------- */
 const I = {
-  arrowLeft: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>,
   plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>,
-  check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>,
-  shield: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>,
-  calc: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h4" /></svg>,
-  refresh: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" /></svg>,
-  scroll: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9M8 3h10a2 2 0 0 1 2 2v3M8 3v14a2 2 0 0 0 2 2h1M8 7h6M8 11h4" /></svg>,
-  trend: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>,
-  layers: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" /></svg>,
-  lock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>,
   arrow: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  clock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>,
 };
 
-/* code sample rendered from tokens so no literal braces sit in JSX text */
-type Tok = { t: string; c?: string };
-const CODE: Tok[][] = [
-  [{ t: "const", c: "k" }, { t: " claimId " }, { t: "=", c: "k" }, { t: " " }, { t: "\"RET-260903-031\"", c: "s" }, { t: ";" }],
-  [{ t: "const", c: "k" }, { t: " endpoint " }, { t: "=", c: "k" }, { t: " " }, { t: "`/api/claims/${claimId}/preflight`", c: "s" }, { t: ";" }],
-  [],
-  [{ t: "// Re-fetch provider state before approval", c: "c" }],
-  [{ t: "const", c: "k" }, { t: " check " }, { t: "=", c: "k" }, { t: " " }, { t: "await", c: "k" }, { t: " " }, { t: "fetch", c: "fn" }, { t: "(endpoint, {" }],
-  [{ t: "  method", c: "n" }, { t: ": " }, { t: "\"POST\"", c: "s" }, { t: "," }],
-  [{ t: "  body", c: "n" }, { t: ": JSON.stringify({ expectedPlanFingerprint })," }],
-  [{ t: "});" }],
-  [],
-  [{ t: "if", c: "k" }, { t: " (!check.ok) " }, { t: "return", c: "k" }, { t: " " }, { t: "\"fail_closed\"", c: "s" }, { t: ";" }],
-  [{ t: "// Approval uses the same reviewed fingerprint", c: "c" }],
-  [{ t: "// and executes through the server-side saga.", c: "c" }],
+const OPERATOR_SIGNALS = [
+  {
+    quote: "In multi-store orders, this feels inconsistent and harder to reconcile: reporting, refund logic, disputes, accounting clarity.",
+    source: "r/stripe · multi-store payments",
+    href: "https://www.reddit.com/r/stripe/comments/1qwuwbe/stripe_connect_fee_handling_destination_charges/",
+  },
+  {
+    quote: "Whenever I refund a charge, the refund is actually getting taken from the business account instead of the connected account.",
+    source: "r/stripe · connected-account refunds",
+    href: "https://www.reddit.com/r/stripe/comments/15gck8a/refund_payment_to_connected_account_taking/",
+  },
+  {
+    quote: "With split payments, the application is liable for fees, chargebacks and refunds. I would like the vendor to be liable.",
+    source: "r/stripe · multi-vendor marketplace",
+    href: "https://www.reddit.com/r/stripe/comments/um37uu/can_i_use_stripe_connects_direct_charges_for/",
+  },
 ];
-
-/* ---------- control-surface states (one seeded demo claim, RET-260903-031) ---------- */
-type SurfaceStep = { tag: string; tone: string; title: string; state: string; body: React.ReactNode };
-const STEPS: SurfaceStep[] = [
-  { tag: "Evidence", tone: "blue", title: "Return logged", state: "evidence_received", body: <>Order <b>MM-18472</b> · 2 items across Aavya + Noya · precomputed returned-line and reason fixture.</> },
-  { tag: "Split", tone: "gold", title: "Refund apportioned", state: "plan_balanced", body: <>
-    <b>₹2,328.54</b> refund resolves to <b>₹1,979.26</b> seller reversal + <b>₹349.28</b> platform contribution, in integer paise.
-    <span className="lp-splitbar" aria-hidden>
-      <span className="lp-splitseg rev" style={{ width: "85%" }} />
-      <span className="lp-splitseg con" style={{ width: "15%" }} />
-    </span>
-    <span className="lp-splitlegend">
-      <span className="rev"><i />Aavya reversal · <b>₹1,979.26</b> · 85%</span>
-      <span className="con"><i />Platform · <b>₹349.28</b> · 15%</span>
-    </span>
-  </> },
-  { tag: "Reverse", tone: "green", title: "Route reversal drafted", state: "reversal_prepared", body: <>The plan targets <b>₹1,979.26</b> against Aavya Textiles&rsquo; seeded Route transfer; after approval, execution records intent and a stable receipt before submission.</> },
-  { tag: "Approve", tone: "green", title: "Human approval held", state: "ready_for_approval", body: <>Nothing moves until a named operator signs off; the exact plan fingerprint is bound to that approval.</> },
-  { tag: "Reconcile", tone: "green", title: "Simulated and closed", state: "completed", body: <>The simulator confirms the seller reversal before the customer refund · balanced to the paise.</> },
-];
-
-/* ---------- control report (assurance) ---------- */
-function ControlReport() {
-  const { ref, seen } = useInView<HTMLDivElement>(0.35);
-  const fixtures = useCountUp(64, seen, 1300);
-  const exceptions = useCountUp(16, seen, 1300);
-  return (
-    <div className="lp-report" ref={ref}>
-      <div className="lp-report-bar">
-        <span>returnsplit-engine · deterministic control set · 64 records</span>
-        <span className="pass">PASS</span>
-      </div>
-      <div className="lp-report-body">
-        <div className="lp-report-row">
-          <span className="lbl">fixture assertions</span>
-          <span className="lead" />
-          <span className="val">{fixtures}<em> / 64</em></span>
-        </div>
-        <div className="lp-report-row">
-          <span className="lbl">unsafe automations</span>
-          <span className="lead" />
-          <span className="val">0</span>
-        </div>
-        <div className="lp-report-row">
-          <span className="lbl">wrong-seller overage</span>
-          <span className="lead" />
-          <span className="val">₹0</span>
-        </div>
-        <div className="lp-report-row">
-          <span className="lbl">expected exceptions surfaced</span>
-          <span className="lead" />
-          <span className="val">{exceptions}<em> / 16</em></span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ---------- FAQ ---------- */
 const FAQS: { q: string; a: string }[] = [
@@ -211,7 +162,6 @@ export function Landing() {
   const [dir, setDir] = useState<"up" | "down">("up");
   const [prog, setProg] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
-  const [activeStep, setActiveStep] = useState(1);
   useEffect(() => {
     let last = window.scrollY;
     let ticking = false;
@@ -250,27 +200,31 @@ export function Landing() {
           <a className="lp-word" href="#top">Return<span className="s">Split</span></a>
           <div className="lp-nav-links">
             <a href="#how">How it works</a>
-            <a href="#features">Control</a>
+            <a href="#control">Control</a>
             <a href="#assurance">Assurance</a>
             <a href="#developers">Developers</a>
             <a href="#faq">FAQ</a>
-            <a href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon" target="_blank" rel="noreferrer">GitHub</a>
           </div>
           <div className="lp-nav-cta">
             <a
-              className="lp-btn lp-btn-ghost lp-nav-github"
+              className="lp-btn lp-btn-ghost lp-nav-social lp-nav-github"
               href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon"
               target="_blank"
               rel="noreferrer"
               aria-label="Open ReturnSplit on GitHub in a new tab"
             >
-              GitHub
+              <Image src="/social/github.svg" alt="" width={17} height={17} unoptimized />
+              <span>GitHub</span>
             </a>
-            <Link className="lp-btn lp-btn-ghost lp-nav-demo" href="/claims/RET-260903-031">View demo claim</Link>
-            <Link className="lp-btn lp-btn-primary" href="/claims" aria-label="Open the workbench">
-              <span className="lp-nav-label-long">Open the workbench</span>
-              <span className="lp-nav-label-short" aria-hidden="true">Workbench</span>
-            </Link>
+            <a
+              className="lp-btn lp-btn-ghost lp-nav-social lp-nav-x"
+              href="https://x.com/laziedev"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open Khushi's profile on X in a new tab"
+            >
+              <Image src="/social/x.svg" alt="" width={15} height={15} unoptimized />
+            </a>
           </div>
         </div>
       </nav>
@@ -279,7 +233,6 @@ export function Landing() {
       <header className="lp-hero" id="top">
         <div className="lp-dots" />
         <div className="lp-wrap lp-hero-inner">
-          <span className="lp-eyebrow">Track 04 finance control · working test-mode prototype</span>
           <h1>
             <span>One item comes back.</span>
             <span>Reverse the <em>exact</em> transfer.</span>
@@ -296,263 +249,113 @@ export function Landing() {
         </div>
       </header>
 
-      <div className="lp-evidence-rail" aria-label="Prototype evidence">
-        <div className="lp-wrap lp-evidence-grid">
-          <span><i />Working demo</span>
-          <span><b>64 / 64</b> control fixtures</span>
-          <span><b>₹0</b> wrong-seller allocation</span>
-          <span>Deterministic test provider</span>
-        </div>
-      </div>
-
-      {/* control surface - one framed audit panel */}
-      <section className="lp-section lp-fan-sec" id="surface">
-        <div className="lp-wrap">
-          <Reveal>
-            <div className="lp-section-head center">
-              <span className="lp-eyebrow sq">The control surface</span>
-              <h2>One seeded claim, five illustrated steps.</h2>
-              <p>Each seeded scenario is presented on the same reviewable surface - evidence, split, reversal, approval,
-                reconciliation. Here is demo claim RET-260903-031, start to close.</p>
-            </div>
-          </Reveal>
-          <Reveal>
-            <div className="lp-surface">
-              <div className="lp-surface-bar">
-                <span className="lp-surface-id">{I.scroll}RET-260903-031</span>
-                <span className="lp-surface-live"><span className="lp-fan-dot" />Simulation · reversal before refund · <b>replayable</b></span>
-              </div>
-              <div className="lp-surface-metrics" aria-label="Claim summary">
-                <span><small>Refund</small><b>₹2,328.54</b></span>
-                <span><small>Seller reversal</small><b>₹1,979.26</b></span>
-                <span><small>Platform share</small><b>₹349.28</b></span>
-              </div>
-              <div className="lp-surface-workspace">
-                <ol className="lp-surface-rail" aria-label="Claim replay steps">
-                  {STEPS.map((s, i) => (
-                    <li className={`lp-srow${activeStep === i ? " active" : ""}`} key={s.tag}>
-                      <button type="button" onClick={() => setActiveStep(i)} aria-label={`${s.tag}: ${s.title}`} aria-pressed={activeStep === i}>
-                        <span className="lp-srow-node">{i < activeStep ? I.check : i + 1}</span>
-                        <span className="lp-srow-main">
-                          <span className="lp-srow-head">
-                            <span className={`lp-fcard-tag ${s.tone}`}>{s.tag}</span>
-                            <span className="lp-srow-title">{s.title}</span>
-                          </span>
-                          <code>{s.state}</code>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-                <aside className="lp-surface-drawer" aria-live="polite">
-                  <div className="lp-drawer-head">
-                    <span>Step {String(activeStep + 1).padStart(2, "0")} / 05</span>
-                    <span className={`lp-fcard-tag ${STEPS[activeStep].tone}`}>{STEPS[activeStep].tag}</span>
-                  </div>
-                  <div className="lp-drawer-body" key={activeStep}>
-                    <span className="lp-eyebrow">Replay evidence</span>
-                    <h3>{STEPS[activeStep].title}</h3>
-                    <div className="lp-drawer-copy">{STEPS[activeStep].body}</div>
-                    <dl className="lp-drawer-facts">
-                      <div><dt>Environment</dt><dd>Test mode</dd></div>
-                      <div><dt>Order</dt><dd>MM-18472</dd></div>
-                      <div><dt>Policy</dt><dd>Creo Market v3.2</dd></div>
-                    </dl>
-                  </div>
-                  <div className="lp-drawer-actions">
-                    <button type="button" onClick={() => setActiveStep((activeStep + STEPS.length - 1) % STEPS.length)}>{I.arrowLeft} Previous</button>
-                    <button type="button" onClick={() => setActiveStep((activeStep + 1) % STEPS.length)}>Next step {I.arrow}</button>
-                  </div>
-                </aside>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* proof quote */}
-      <section className="lp-proof">
-        <div className="lp-wrap">
-          <Reveal>
-            <div className="lp-doc">
-              <div className="lp-doc-body">
-                <blockquote>
-                  For partial refunds on a payment transferred to multiple accounts, <b>Razorpay cannot determine which
-                  transfer to reverse partially.</b> You will have to use the transfer reversal API.
-                </blockquote>
-                <div className="lp-doc-cite">
-                  <b>Razorpay Route - official documentation.</b>
-                  <a href="https://razorpay.com/docs/payments/route/refunds/" target="_blank" rel="noreferrer">razorpay.com/docs/payments/route/refunds</a>
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* pipeline */}
-      <section className="lp-section lp-band" id="how">
-        <div className="lp-wrap">
-          <Reveal>
-            <div className="lp-section-head center">
-              <span className="lp-eyebrow sq">The control loop</span>
-              <h2>Evidence in. Balanced plan out. Each demo step recorded.</h2>
-              <p>After a return is approved, the prototype runs a reviewable state machine. It records intent before
-                provider calls, pauses unknown outcomes for reconciliation, and waits for confirmed reversals before refunding.</p>
-            </div>
-          </Reveal>
-          <Reveal>
-            <div className="lp-flow">
-              <div className="lp-flow-line" />
-              <div className="lp-flow-grid">
-                {[
-                  { n: "1", verb: "Assess", t: "needs_review", d: "Precomputed returned-line and policy fixtures are treated as untrusted, validated against the seeded order, then passed to deterministic paise calculation.", on: true },
-                  { n: "2", verb: "Approve", t: "ready_for_approval", d: "A named operator approves the frozen plan, bound to an exact fingerprint. Separate maker-checker roles and RBAC remain production work.", on: true },
-                  { n: "3", verb: "Execute", t: "processing", d: "Pre-flight re-fetch fails closed on drift. Intent and a stable receipt are recorded so unknown Route outcomes pause for reconciliation, not a blind retry.", on: true },
-                  { n: "4", verb: "Settle", t: "completed", d: "The customer refund starts only after required reversals confirm; the simulator or configured Test Mode status is then recorded.", on: true },
-                ].map((s) => (
-                  <div key={s.n} className={`lp-stage${s.on ? " on" : ""}`}>
-                    <div className="lp-stage-node">{s.n}</div>
-                    <div className="lp-stage-verb">{s.verb}</div>
-                    <code>{s.t}</code>
-                    <p>{s.d}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-          <Reveal>
-            <div className="lp-branch">
-              <span><i className="d" style={{ background: "var(--lp-gold)" }} /> needs_review → evidence requested</span>
-              <span><i className="d" style={{ background: "var(--lp-danger)" }} /> blocked → manual intervention</span>
-              <span><i className="d" style={{ background: "var(--lp-blue)" }} /> reversal_result_unknown → receipt-based reconcile</span>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* features bento */}
-      <section className="lp-section" id="features">
+      {/* public operator signals */}
+      <section className="lp-section lp-signals" aria-labelledby="operator-signals-title">
         <div className="lp-wrap">
           <Reveal>
             <div className="lp-section-head">
-              <span className="lp-eyebrow sq">What you get</span>
-              <h2>The missing brain between a return and your payout ledger.</h2>
+              <span className="lp-eyebrow sq">Operator signals</span>
+              <h2 id="operator-signals-title">Marketplace refund ownership is still unclear.</h2>
+              <p>Public operator discussions showing the same reconciliation gap across marketplace payment rails.</p>
             </div>
           </Reveal>
           <Reveal>
-            <div className="lp-bento">
-              <div className="lp-cell lp-c-a">
-                <span className="lp-cell-idx">01</span>
-                <div className="lp-cell-t">{I.calc}<h3>Exact-paise allocation</h3></div>
-                <p>Every rupee computed in integer paise with largest-remainder rounding - no floats, no drift. The split
-                  sums to the refund, to the last paisa, or it never runs.</p>
-                <div className="lp-demo">
-                  <div className="lp-demo-row"><span>Aavya Textiles · reverse</span><b className="t">−₹1,979.26</b></div>
-                  <div className="lp-demo-row"><span>Marketplace · contribute</span><b className="g">−₹349.28</b></div>
-                  <div className="lp-demo-row"><span>Shipping · non-refundable</span><b>₹0.00</b></div>
-                  <div className="lp-demo-row tot"><span>Customer refund</span><b>₹2,328.54</b></div>
-                </div>
+            <aside className="lp-doc-source" aria-label="Official Razorpay documentation">
+              <blockquote>
+                For partial refunds on a payment transferred to multiple accounts, <b>Razorpay cannot determine which
+                transfer to reverse partially.</b> You will have to use the transfer reversal API.
+              </blockquote>
+              <div className="lp-doc-cite">
+                <b>Razorpay Route - official documentation.</b>
+                <a href="https://razorpay.com/docs/api/payments/route/refund-payments-and-reverse-transfer/" target="_blank" rel="noreferrer">Razorpay Route refund API</a>
               </div>
-              <div className="lp-cell lp-c-b">
-                <span className="lp-cell-idx">02</span>
-                <div className="lp-cell-t">{I.refresh}<h3>Shortfall handling</h3></div>
-                <p>When the reversible transfer balance is too low, the demo blocks approval, shows the residual, and
-                  can open an owned payments-reconciliation case instead of moving partial money.</p>
-                <div className="lp-cell-spacer" />
-                <div className="lp-block">
-                  <div className="lp-block-h">
-                    <span className="lp-mono">RET-260903-038 · Anaya</span>
-                    <span className="lp-pill red">Approval blocked</span>
-                  </div>
-                  <p>Needs ₹850.85 · only ₹49.15 reversible → approval blocked, reconciliation required.</p>
-                </div>
-              </div>
-              <div className="lp-cell lp-c-c">
-                <span className="lp-cell-idx">03</span>
-                <div className="lp-cell-t">{I.shield}<h3>Fail-closed retry safety</h3></div>
-                <p>A timed-out reversal becomes unknown, never a blind retry. The prototype fetches by stable receipt;
-                  durable cross-process protection remains production work.</p>
-                <div className="lp-cell-spacer" />
-                <span className="lp-tag">reversal_result_unknown → reconcile</span>
-              </div>
-              <div className="lp-cell lp-c-d">
-                <span className="lp-cell-idx">04</span>
-                <div className="lp-cell-t">{I.scroll}<h3>Process-local audit history</h3></div>
-                <div className="lp-tl">
-                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Plan frozen<small>Khushi Diwan · 08:57</small></span></div>
-                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Demo transfer reversed<small>masked simulator reference</small></span></div>
-                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Demo refund completed<small>simulator status recorded</small></span></div>
-                </div>
-              </div>
-              <div className="lp-cell lp-c-e">
-                <span className="lp-cell-idx">05</span>
-                <div className="lp-cell-t">{I.trend}<h3>Exposure forecasting</h3></div>
-                <p>A dated TimesFM 2.5 backtest measured aggregate refund exposure on 56 synthetic daily totals. It is
-                  illustrative planning evidence, not production accuracy.</p>
-                <div className="lp-wape">
-                  <div><b>3.77%</b><span>7-day WAPE</span></div>
-                  <div><b>3.43%</b><span>14-day</span></div>
-                  <div><b>3.71%</b><span>30-day</span></div>
-                </div>
-              </div>
-              <div className="lp-cell lp-c-f">
-                <div className="lp-cf-copy">
-                  <span className="lp-cell-idx">06</span>
-                  <div className="lp-cell-t">{I.layers}<h3>Cross-rail roadmap</h3></div>
-                  <p>The prototype implements Razorpay Route simulation and an optional Test Mode adapter. Stripe Connect
-                    and Cashfree are roadmap research; no adapters are included.</p>
-                </div>
-                <span className="lp-tag">PROPOSED ROADMAP · NOT IMPLEMENTED</span>
-              </div>
-            </div>
+            </aside>
           </Reveal>
+          <div className="lp-signal-grid">
+            {OPERATOR_SIGNALS.map((signal, index) => (
+              <Reveal key={signal.href} delay={index * 70}>
+                <a className="lp-signal-card" href={signal.href} target="_blank" rel="noreferrer">
+                  <div className="lp-reddit-head">
+                    <Image src="/social/reddit.svg" alt="" width={21} height={21} unoptimized />
+                    <span><b>r/stripe</b><small>public operator discussion</small></span>
+                    <i aria-hidden />
+                  </div>
+                  <blockquote>{signal.quote}</blockquote>
+                  <div className="lp-reddit-foot">
+                    <span className="lp-reddit-context">{signal.source.replace("r/stripe · ", "")}</span>
+                    <span className="lp-signal-link">View on Reddit {I.arrow}</span>
+                  </div>
+                </a>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* assurance / stats */}
-      <section className="lp-section lp-ink-sec" id="assurance">
+      {/* product controls */}
+      <section className="lp-section lp-feature-story" id="how">
         <div className="lp-wrap">
           <Reveal>
-            <div className="lp-section-head center">
-              <span className="lp-eyebrow">Assurance</span>
-              <h2>Boring where it counts. Provable where it matters.</h2>
-              <p>The prototype calculates the money plan without holding or pooling funds. Its default provider is a
-                deterministic simulator; an optional Razorpay Test Mode adapter is available, and live keys are rejected.</p>
+            <div className="lp-feature-intro" id="control">
+              <span className="lp-eyebrow">Inside the workbench</span>
+              <h2>Three views. One controlled refund.</h2>
+              <p>Focused tools for deciding what moves, preparing for what returns, and keeping the outcome reviewable.</p>
             </div>
           </Reveal>
-          <Reveal>
-            <ControlReport />
-          </Reveal>
-        </div>
-      </section>
 
-      {/* developers */}
-      <section className="lp-section lp-band" id="developers">
-        <div className="lp-wrap lp-codewrap">
-          <Reveal>
-            <div className="lp-section-head">
-              <span className="lp-eyebrow sq">Engine contract</span>
-              <h2>Plan first. Execute after approval.</h2>
-              <p>The workbench posts the reviewed fingerprint to its same-origin preflight route before approval, then
-                enforces reversal-before-refund ordering. Demo state is process-local.</p>
-              <div className="lp-hero-actions" style={{ justifyContent: "flex-start", marginTop: 24 }}>
-                <Link className="lp-btn lp-btn-ghost" href="/claims">Explore the workbench {I.arrow}</Link>
+          <div className="lp-feature-list">
+            <article className="lp-feature-row">
+              <div className="lp-feature-copy">
+                <span className="lp-feature-index">01 · Allocation</span>
+                <h3>Balance every seller to the last paisa.</h3>
+                <p>Integer-paise math assigns the exact seller reversal and platform contribution before approval.</p>
+                <Link className="lp-feature-link" href="/claims/RET-260903-031">Inspect the calculation {I.arrow}</Link>
               </div>
-            </div>
-          </Reveal>
-          <Reveal>
-            <div className="lp-code">
-              <div className="lp-code-bar"><i /><i /><i /><span>conceptual-flow.ts</span></div>
-              <pre><code>{CODE.map((line, i) => (
-                <span className="lp-cl" key={i}>
-                  {line.length === 0 ? " " : line.map((tok, j) => (
-                    <span key={j} className={tok.c ?? undefined}>{tok.t}</span>
-                  ))}
-                </span>
-              ))}</code></pre>
-            </div>
-          </Reveal>
+              <div className="lp-feature-media">
+                <FeatureClip
+                  src="/demo/returnsplit-feature-allocation.mp4?v=no-motion-1"
+                  poster="/demo/returnsplit-feature-allocation-poster.webp?v=no-motion-1"
+                  label="ReturnSplit exact allocation view balancing seller reversal and platform contribution"
+                />
+              </div>
+            </article>
+
+            <article className="lp-feature-row is-reversed">
+              <div className="lp-feature-copy">
+                <span className="lp-feature-index">02 · Reserve</span>
+                <h3>See refund exposure before it hits the queue.</h3>
+                <p>The reserve view turns expected returns into a planning signal for finance operations.</p>
+                <Link className="lp-feature-link" href="/risk">Open reserve planning {I.arrow}</Link>
+              </div>
+              <div className="lp-feature-media">
+                <FeatureClip
+                  src="/demo/returnsplit-feature-reserve.mp4?v=no-motion-1"
+                  poster="/demo/returnsplit-feature-reserve-poster.webp?v=no-motion-1"
+                  label="ReturnSplit reserve forecast view showing upcoming refund exposure"
+                />
+              </div>
+            </article>
+
+            <article className="lp-feature-row" id="developers">
+              <div className="lp-feature-copy" id="assurance">
+                <span className="lp-feature-index">03 · Assurance</span>
+                <h3>Keep the decision attached to the outcome.</h3>
+                <p>Approval, provider results, and paused exceptions stay together for review and reconciliation.</p>
+                <div className="lp-feature-invariant">
+                  <span>Ordering rule</span>
+                  <b>Reversals confirm before the customer refund starts.</b>
+                </div>
+              </div>
+              <div className="lp-feature-media">
+                <FeatureClip
+                  src="/demo/returnsplit-feature-audit.mp4?v=no-motion-1"
+                  poster="/demo/returnsplit-feature-audit-poster.webp?v=no-motion-1"
+                  label="ReturnSplit audit and reconciliation view showing the claim decision and outcome history"
+                />
+              </div>
+            </article>
+
+          </div>
         </div>
       </section>
 
@@ -572,24 +375,6 @@ export function Landing() {
         </div>
       </section>
 
-      {/* cta */}
-      <section className="lp-section" id="cta" style={{ paddingTop: 0 }}>
-        <div className="lp-wrap">
-          <Reveal>
-            <div className="lp-cta-card">
-              <div className="lp-dots" />
-              <h2>See exactly which transfer to reverse.</h2>
-              <p>Open the workbench and replay a seeded partial-refund scenario - the per-seller split, approval gate,
-                simulated execution, and process-local audit history.</p>
-              <div className="lp-cta-actions">
-                <Link className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</Link>
-                <Link className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">View demo claim</Link>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
       {/* footer */}
       <footer className="lp-footer">
         <div className="lp-wrap">
@@ -598,12 +383,15 @@ export function Landing() {
               <a className="lp-word lg" href="#top">Return<span className="s">Split</span></a>
               <p>A financial-control prototype for reviewable marketplace return reversals on Razorpay Route.</p>
             </div>
-            <div className="lp-footer-links" aria-label="Footer links">
-              <Link href="/claims">Workbench</Link>
-              <Link href="/evaluation">Evaluation</Link>
-              <a href="#developers">Engine contract</a>
-              <a href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon" target="_blank" rel="noreferrer">GitHub</a>
-              <a href="https://razorpay.com/docs/payments/route/" target="_blank" rel="noreferrer">Route docs</a>
+            <div className="lp-footer-nav">
+              <span className="lp-footer-label">Track 04 finance control · working test-mode prototype</span>
+              <div className="lp-footer-links" aria-label="Footer links">
+                <Link href="/claims">Workbench</Link>
+                <Link href="/evaluation">Evaluation</Link>
+                <a href="#developers">Engine contract</a>
+                <a href="https://github.com/codebanditssss/ReturnSplit-Razorpay-Buildathon" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="https://razorpay.com/docs/api/payments/route/refund-payments-and-reverse-transfer/" target="_blank" rel="noreferrer">Route docs</a>
+              </div>
             </div>
           </div>
           <div className="lp-footer-note">
