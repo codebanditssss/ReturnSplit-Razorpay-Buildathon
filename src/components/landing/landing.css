@@ -456,7 +456,6 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-ribbons:hover .lp-ribbon-track { animation-play-state: paused; }
 
 @media (prefers-reduced-motion: reduce) {
-  .lp-hero h1 em { animation: none; background-position: 0 0; }
   .lp-frame { transform: none; transition: none; }
 }
 
