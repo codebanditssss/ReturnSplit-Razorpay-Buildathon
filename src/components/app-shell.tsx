@@ -118,10 +118,6 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
           })}
         </nav>
         <div className="sidebar-bottom">
-          <div className="connection-card">
-            <span className="connection-dot" />
-            <div><strong>{providerMode === "demo" ? "Simulation" : "Razorpay Test Mode"}</strong><span>{providerMode === "demo" ? "No live money" : `${providerLabel} · no live money`}</span></div>
-          </div>
           <Link className={`nav-link ${pathname === "/settings" ? "is-active" : ""}`} href="/settings" onClick={closeMobileMenuAfterNavigation} aria-current={pathname === "/settings" ? "page" : undefined}>
             <Icon name="settings" /><span>Settings</span>
           </Link>

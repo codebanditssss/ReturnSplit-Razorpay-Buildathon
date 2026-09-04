@@ -6,10 +6,6 @@ import "./landing.css";
 
 /* ---------- helpers ---------- */
 
-function rupees(paise: number): string {
-  return "₹" + (paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 function useCountUp(target: number, run: boolean, ms = 1100) {
   const [v, setV] = useState(0);
   useEffect(() => {
@@ -101,7 +97,6 @@ function ProductTour() {
 const I = {
   arrowLeft: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>,
   plus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>,
-  minus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /></svg>,
   check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>,
   shield: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>,
   calc: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h4" /></svg>,
@@ -111,17 +106,8 @@ const I = {
   layers: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5" /></svg>,
   lock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>,
   arrow: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>,
-  inbox: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2M5.5 5.5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.5A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.5Z" /></svg>,
-  pkg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8ZM3 8l9 5 9-5M12 13v8" /></svg>,
-  file: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8ZM14 2v6h6M9 13h6M9 17h6" /></svg>,
-  activity: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>,
   clock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>,
 };
-
-/* ---------- seeded golden-case fixture (order MM-18472 / claim RET-260903-031) ---------- */
-const CUSTOMER = 232854;  // ₹2,328.54 customer refund
-const AAVYA = 197926;     // ₹1,979.26 reversed from Aavya Textiles
-const MARKET = 34928;     // ₹349.28 marketplace contribution
 
 /* code sample rendered from tokens so no literal braces sit in JSX text */
 type Tok = { t: string; c?: string };
@@ -159,82 +145,6 @@ const STEPS: SurfaceStep[] = [
   { tag: "Approve", tone: "green", title: "Human approval held", state: "ready_for_approval", body: <>Nothing moves until a named operator signs off; the exact plan fingerprint is bound to that approval.</> },
   { tag: "Reconcile", tone: "green", title: "Simulated and closed", state: "completed", body: <>The simulator confirms the seller reversal before the customer refund · balanced to the paise.</> },
 ];
-
-/* ---------- hero product panel: faithful mini-workbench ---------- */
-function Workbench() {
-  const { ref, seen } = useInView<HTMLDivElement>(0.3);
-  const total = useCountUp(CUSTOMER, seen);
-  const aavya = useCountUp(AAVYA, seen);
-  const market = useCountUp(MARKET, seen);
-  return (
-    <div className="lp-frame-wrap" ref={ref}>
-      <div className="lp-frame-glow" />
-      <div className="lp-frame">
-        <div className="lp-wb">
-          <aside className="lp-wb-side">
-            <div className="lp-wb-brand"><Mark />ReturnSplit</div>
-            <nav className="lp-wb-nav">
-              <a className="on">{I.inbox} Claims</a>
-              <a>{I.pkg} Orders</a>
-              <a>{I.file} Policies</a>
-              <a>{I.shield} Reserve</a>
-              <a>{I.activity} Activity</a>
-            </nav>
-            <div className="lp-wb-badge">
-              <i />
-              <div><b>Simulation</b><span>No live money</span></div>
-            </div>
-          </aside>
-          <div className="lp-wb-main">
-            <div className="lp-wb-crumb">Claims › RET-260903-031</div>
-            <div className="lp-wb-head">
-              <h4>Return claim RET-260903-031</h4>
-              <span className="lp-pill green">Ready for approval</span>
-            </div>
-            <div className="lp-wb-meta">Order MM-18472 · Tamish · Received 3 Sep 2026 · Creo Market Returns v3.2 §7.3</div>
-            <div className="lp-wb-grid">
-              <div className="lp-mm">
-                <div className="lp-mm-h">Money movement</div>
-                <div className="lp-mm-row">
-                  <span className="lp-mm-ic rev">{I.arrowLeft}</span>
-                  <span className="lp-mm-name">Aavya Textiles<small>reverse Route transfer</small></span>
-                  <span className="lp-mm-amt rev">−{rupees(aavya)}</span>
-                </div>
-                <div className="lp-mm-row">
-                  <span className="lp-mm-ic con">{I.plus}</span>
-                  <span className="lp-mm-name">Marketplace<small>commission contribution</small></span>
-                  <span className="lp-mm-amt con">−{rupees(market)}</span>
-                </div>
-                <div className="lp-mm-row">
-                  <span className="lp-mm-ic zero">{I.minus}</span>
-                  <span className="lp-mm-name">Shipping<small>non-refundable on partial</small></span>
-                  <span className="lp-mm-amt zero">{rupees(0)}</span>
-                </div>
-                <div className="lp-mm-total">
-                  <span>Customer refund</span>
-                  <b>{rupees(total)}</b>
-                </div>
-                <div className="lp-inv">{I.check}<span>Balances to the paise - <code>Σ reversals + platform = refund</code></span></div>
-              </div>
-              <div className="lp-act">
-                <div className="lp-act-eye">Approval summary</div>
-                <div className="lp-act-amt">{rupees(total)}</div>
-                <div className="lp-act-sub">1 transfer to reverse · buyer keeps the sneakers</div>
-                <div className="lp-act-div" />
-                <div className="lp-approve lp-pulse">{I.check} Approve &amp; execute</div>
-                <div className="lp-safe">{I.lock} Named operator · fingerprint-bound plan</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Mark() {
-  return <span className="lp-mark"><span /><span /></span>;
-}
 
 /* ---------- control report (assurance) ---------- */
 function ControlReport() {
@@ -389,7 +299,11 @@ export function Landing() {
             <span>{I.check} Unknown outcomes pause for reconciliation</span>
           </div>
         </div>
-        <div className="lp-wrap"><Workbench /></div>
+        <div className="lp-wrap">
+          <div className="lp-tour-shell lp-tour-shell-hero">
+            <ProductTour />
+          </div>
+        </div>
       </header>
 
       <div className="lp-evidence-rail" aria-label="Prototype evidence">
@@ -400,23 +314,6 @@ export function Landing() {
           <span>Deterministic test provider</span>
         </div>
       </div>
-
-      <section className="lp-section lp-tour-section" aria-labelledby="product-tour-title">
-        <div className="lp-wrap">
-          <Reveal>
-            <div className="lp-section-head center">
-              <span className="lp-eyebrow sq">Product tour</span>
-              <h2 id="product-tour-title">Return control, in 18 seconds.</h2>
-              <p>Move from the operations queue into a claim, inspect the governing policy, and follow the recorded outcome.</p>
-            </div>
-          </Reveal>
-          <Reveal>
-            <div className="lp-tour-shell">
-              <ProductTour />
-            </div>
-          </Reveal>
-        </div>
-      </section>
 
       {/* control surface - one framed audit panel */}
       <section className="lp-section lp-fan-sec" id="surface">
