@@ -541,3 +541,39 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
   .lp-root * { animation: none !important; }
   .lp-reveal { opacity: 1; transform: none; transition: none; }
 }
+
+/* ============ SUBTLE MOTION PASS (self-contained, hover micro-interactions) ============ */
+.lp-fcard, .lp-c-a, .lp-c-b, .lp-c-c, .lp-c-d, .lp-c-e, .lp-c-f, .lp-stage-node {
+  transition: transform .32s cubic-bezier(.22,1,.36,1), box-shadow .32s cubic-bezier(.22,1,.36,1), border-color .32s ease;
+  will-change: transform;
+}
+.lp-fcard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 44px -26px rgba(14,40,28,.5);
+  border-color: var(--lp-green-bright, #4fc39a);
+}
+.lp-fcard:hover .lp-fcard-ico { transform: translateY(-1px) scale(1.06); }
+.lp-fcard-ico { transition: transform .32s cubic-bezier(.34,1.4,.5,1); }
+.lp-c-a:hover, .lp-c-b:hover, .lp-c-c:hover, .lp-c-d:hover, .lp-c-e:hover, .lp-c-f:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -26px rgba(14,40,28,.42);
+}
+.lp-stage-node:hover { transform: translateY(-2px); }
+.lp-btn { transition: transform .2s cubic-bezier(.34,1.32,.5,1), box-shadow .28s ease, background .2s ease, color .2s ease, border-color .2s ease; }
+.lp-btn:hover { transform: translateY(-2px); }
+.lp-btn:active { transform: translateY(0); }
+.lp-btn.lp-btn-primary:hover { box-shadow: 0 14px 30px -14px rgba(23,98,71,.72); }
+.lp-tag, .lp-pill { transition: transform .22s cubic-bezier(.34,1.32,.5,1), background .22s ease, border-color .22s ease; }
+.lp-tag:hover, .lp-pill:hover { transform: translateY(-1px); }
+.lp-word .s { transition: letter-spacing .3s ease; }
+.lp-word:hover .s { letter-spacing: .01em; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-fcard, .lp-c-a, .lp-c-b, .lp-c-c, .lp-c-d, .lp-c-e, .lp-c-f, .lp-stage-node,
+  .lp-fcard-ico, .lp-btn, .lp-tag, .lp-pill, .lp-word .s {
+    transition: none !important;
+  }
+  .lp-fcard:hover, .lp-c-a:hover, .lp-c-b:hover, .lp-c-c:hover, .lp-c-d:hover, .lp-c-e:hover,
+  .lp-c-f:hover, .lp-stage-node:hover, .lp-btn:hover, .lp-tag:hover, .lp-pill:hover {
+    transform: none !important;
+  }
+}
