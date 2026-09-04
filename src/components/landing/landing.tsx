@@ -47,9 +47,40 @@ function useInView<T extends HTMLElement>(threshold = 0.25) {
   return { ref, seen };
 }
 
-function Reveal({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Reveal({ children, style, delay }: { children: React.ReactNode; style?: React.CSSProperties; delay?: number }) {
   const { ref, seen } = useInView<HTMLDivElement>(0.15);
-  return <div ref={ref} className={`lp-reveal${seen ? " is-in" : ""}`} style={style}>{children}</div>;
+  return (
+    <div ref={ref} className={`lp-reveal${seen ? " is-in" : ""}`} style={delay ? { ...style, transitionDelay: `${delay}ms` } : style}>
+      {children}
+    </div>
+  );
+}
+
+/* subtle pointer-driven 3D tilt (desktop + motion-ok only) */
+function useTilt<T extends HTMLElement>(strength = 3.2) {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof window === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+    let raf = 0;
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        el.style.setProperty("--ry", `${px * strength}deg`);
+        el.style.setProperty("--rx", `${-py * strength}deg`);
+      });
+    };
+    const reset = () => { el.style.setProperty("--ry", "0deg"); el.style.setProperty("--rx", "0deg"); };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", reset);
+    return () => { el.removeEventListener("pointermove", onMove); el.removeEventListener("pointerleave", reset); cancelAnimationFrame(raf); };
+  }, [strength]);
+  return ref;
 }
 
 /* ---------- icons ---------- */
@@ -117,16 +148,27 @@ const RIBBON: string[] = [
   "Right transfer, every time",
 ];
 
+/* ---------- fanned control-surface cards (refs: Aeline floating arc + Rooms glass) ---------- */
+type FanCard = { tag: string; tone: string; ico: React.ReactNode; title: React.ReactNode; body: React.ReactNode; foot: React.ReactNode };
+const FAN: FanCard[] = [
+  { tag: "Evidence", tone: "blue", ico: I.inbox, title: "RET-260903-031", body: <>Order <b>MM-18472</b> · Aavya + Noya</>, foot: <><span className="lp-ava-stack"><i /><i /></span>2 sellers</> },
+  { tag: "Split", tone: "gold", ico: I.calc, title: "Per-seller paise", body: <>₹1,979.26 <span className="lp-fcard-sep">·</span> ₹349.28</>, foot: <>{I.check} integer-paise</> },
+  { tag: "Reverse", tone: "green", ico: I.refresh, title: "₹1,979.26", body: <>&rarr; Aavya Textiles</>, foot: <>acc_demo_aavya</> },
+  { tag: "Approve", tone: "green", ico: I.lock, title: "Maker-checker", body: <>signed · fingerprint bound</>, foot: <><span className="lp-ava-stack"><i /></span>operator</> },
+  { tag: "Reconcile", tone: "green", ico: I.scroll, title: "Balanced", body: <>Σ reversals + platform = refund</>, foot: <>{I.check} 0 wrong-seller</> },
+];
+
 /* ---------- hero product panel: faithful mini-workbench ---------- */
 function Workbench() {
   const { ref, seen } = useInView<HTMLDivElement>(0.3);
   const total = useCountUp(CUSTOMER, seen);
   const aavya = useCountUp(AAVYA, seen);
   const market = useCountUp(MARKET, seen);
+  const tilt = useTilt<HTMLDivElement>();
   return (
     <div className="lp-frame-wrap" ref={ref}>
       <div className="lp-frame-glow" />
-      <div className="lp-frame">
+      <div className="lp-frame" ref={tilt}>
         <div className="lp-wb">
           <aside className="lp-wb-side">
             <div className="lp-wb-brand"><Mark />ReturnSplit</div>
@@ -256,6 +298,7 @@ function FaqItem({ q, a, open, onClick }: { q: string; a: string; open: boolean;
 export function Landing() {
   const [atTop, setAtTop] = useState(true);
   const [dir, setDir] = useState<"up" | "down">("up");
+  const [prog, setProg] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
   useEffect(() => {
     let last = window.scrollY;
@@ -265,6 +308,9 @@ export function Landing() {
       setAtTop(y < 8);
       if (y - last > 4) setDir("down");
       else if (last - y > 4) setDir("up");
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      setProg(max > 0 ? Math.min(1, y / max) : 0);
       last = y;
       ticking = false;
     };
@@ -286,6 +332,7 @@ export function Landing() {
 
   return (
     <>
+      <div className="lp-progress" style={{ transform: `scaleX(${prog})` }} aria-hidden />
       <nav className={`lp-nav${float ? " is-float" : ""}${compact ? " is-compact" : ""}`}>
         <div className="lp-nav-shell">
           <a className="lp-word" href="#top">Return<span className="s">Split</span></a>
@@ -370,6 +417,39 @@ export function Landing() {
           </div>
         </div>
       </div>
+
+      {/* control surface - fanned floating cards */}
+      <section className="lp-section lp-fan-sec" id="surface">
+        <div className="lp-wrap">
+          <Reveal>
+            <div className="lp-section-head center">
+              <span className="lp-index">Part. 01</span>
+              <span className="lp-eyebrow sq">The control surface <span className="lp-spark">✳</span></span>
+              <h2>One claim, five states, nothing hidden.</h2>
+              <p>Every partial return moves through the same auditable surface - evidence, split,
+                reversal, approval, reconciliation. Here it is, mid-flight.</p>
+            </div>
+          </Reveal>
+          <Reveal>
+            <div className="lp-fan">
+              <div className="lp-fan-toast"><span className="lp-fan-dot" />Reversal confirmed · 0.42s <b>idempotent</b></div>
+              <div className="lp-fan-arc">
+                {FAN.map((c, i) => (
+                  <article className={`lp-fcard p${i + 1}`} style={{ "--i": i } as React.CSSProperties} key={c.tag}>
+                    <div className="lp-fcard-top">
+                      <span className={`lp-fcard-tag ${c.tone}`}>{c.tag}</span>
+                      <span className="lp-fcard-ico">{c.ico}</span>
+                    </div>
+                    <div className="lp-fcard-title">{c.title}</div>
+                    <div className="lp-fcard-body">{c.body}</div>
+                    <div className="lp-fcard-foot">{c.foot}</div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
 
       {/* proof quote */}
       <section className="lp-proof">

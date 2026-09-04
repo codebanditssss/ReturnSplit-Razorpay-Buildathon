@@ -71,12 +71,22 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 /* buttons - note: selectors are (0,2,0) to beat `.lp-root a` (0,1,1) */
 .lp-btn {
+  position: relative; overflow: hidden;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 46px; padding: 0 22px; border-radius: 8px;
   font-family: var(--lp-sans-stack); font-size: 14.5px; font-weight: 600;
   border: 1px solid transparent; cursor: pointer; white-space: nowrap;
-  transition: background .16s ease, border-color .16s ease, transform .16s ease, color .16s ease;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease, color .16s ease, box-shadow .2s ease;
 }
+.lp-btn > * { position: relative; z-index: 1; }
+/* sheen sweep on primary */
+.lp-btn.lp-btn-primary::before {
+  content: ""; position: absolute; top: 0; left: -60%; width: 45%; height: 100%; z-index: 0;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+  transform: skewX(-18deg); transition: left .6s cubic-bezier(.2,.7,.2,1);
+}
+.lp-btn.lp-btn-primary:hover::before { left: 130%; }
+.lp-btn.lp-btn-primary:hover { box-shadow: 0 12px 28px -14px rgba(23,98,71,.7); }
 .lp-btn svg { width: 17px; height: 17px; }
 .lp-btn.lp-btn-primary { background: var(--lp-green); color: #ffffff; }
 .lp-btn.lp-btn-primary:hover { background: var(--lp-green-hover); transform: translateY(-1px); }
@@ -409,6 +419,54 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 /* ============ ANIMATIONS ============ */
 @keyframes lp-pulse { 0% { box-shadow: 0 0 0 0 rgba(23,98,71,.4); } 70% { box-shadow: 0 0 0 12px rgba(23,98,71,0); } 100% { box-shadow: 0 0 0 0 rgba(23,98,71,0); } }
 @keyframes lp-marq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes lp-sheen-text { to { background-position: 300% 0; } }
+
+/* ============ MOTION LAYER — subtle premium micro-interactions ============ */
+/* scroll-progress hairline (fills as you read) */
+.lp-progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 70;
+  background: linear-gradient(90deg, var(--lp-green), var(--lp-green-bright));
+  transform: scaleX(0); transform-origin: 0 50%; will-change: transform; }
+
+/* hero panel: pointer-driven 3D tilt (vars set by useTilt; identity when idle) */
+.lp-frame { transform: perspective(1300px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2,.7,.2,1); will-change: transform; }
+
+/* animated gradient shimmer on the hero accent word */
+.lp-hero h1 em {
+  background: linear-gradient(100deg, var(--lp-green) 0%, var(--lp-teal) 30%, var(--lp-green-bright) 50%, var(--lp-teal) 70%, var(--lp-green) 100%);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent; animation: lp-sheen-text 7s linear infinite;
+}
+
+/* card hover-lift on editorial cards */
+.lp-cell { transition: transform .32s cubic-bezier(.2,.7,.2,1), box-shadow .32s ease, border-color .32s ease; }
+.lp-cell:hover { transform: translateY(-4px); box-shadow: 0 26px 54px -32px rgba(14,28,22,.42); border-color: var(--lp-green-border); }
+.lp-doc, .lp-code { transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease; }
+.lp-doc:hover, .lp-code:hover { transform: translateY(-3px); }
+
+/* flow nodes gently scale on section hover */
+.lp-stage-node { transition: transform .3s cubic-bezier(.34,1.4,.5,1), box-shadow .3s ease, border-color .3s ease; }
+.lp-stage:hover .lp-stage-node { transform: translateY(-3px) scale(1.05); }
+
+/* nav links: underline that grows from the left */
+.lp-nav-links a { position: relative; }
+.lp-nav-links a::after { content: ""; position: absolute; left: 0; bottom: -4px; height: 2px; width: 100%;
+  background: var(--lp-green); border-radius: 2px; transform: scaleX(0); transform-origin: 0 50%;
+  transition: transform .28s cubic-bezier(.2,.7,.2,1); }
+.lp-nav-links a:hover::after { transform: scaleX(1); }
+
+/* footer links: subtle slide */
+.lp-footer-col a { transition: color .15s ease, transform .18s ease; }
+.lp-footer-col a:hover { transform: translateX(3px); }
+
+/* pause endless scrollers on hover so the eye can read them */
+.lp-marquee:hover .lp-marq-track,
+.lp-ribbons:hover .lp-ribbon-track { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero h1 em { animation: none; background-position: 0 0; }
+  .lp-frame { transform: none; transition: none; }
+}
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 1040px) {
