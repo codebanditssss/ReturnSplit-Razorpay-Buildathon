@@ -67,34 +67,7 @@ This is the core product rule: unresolved evidence becomes review, stale or insu
 
 ## Architecture
 
-```mermaid
-flowchart TB
-  subgraph control["Claim control"]
-    A["Approved return"] --> B["Validate candidate facts"]
-    B --> C{"Unambiguous and valid?"}
-    C -->|No| R["Human resolution or block"]
-    R --> B
-    C -->|Yes| D["Deterministic paise plan"]
-    D --> E["Fingerprint and human approval"]
-    E --> F["Persist saga intent"]
-    F --> G["Reverse seller transfers"]
-    G --> H["Confirm or reconcile"]
-    H --> I["Refund customer"]
-  end
-
-  P["Demo simulator or Razorpay Test Mode"] <--> F
-  P <--> G
-  P <--> H
-  P <--> I
-
-  subgraph planning["Cash planning only"]
-    J["Aggregate daily refund history"] --> K{"TimesFM available?"}
-    K -->|Yes| L["TimesFM p10 p50 p90"]
-    K -->|No| M["Labeled deterministic fallback"]
-    L --> N["Reserve and staffing view"]
-    M --> N
-  end
-```
+![ReturnSplit claim-control, safe-execution, and advisory cash-planning architecture](docs/screenshots/architecture-control-flow.png)
 
 The claim-control and cash-planning paths are deliberately separate. A forecast cannot change eligibility, liability, seller selection, exact amounts, approval, or execution priority.
 
