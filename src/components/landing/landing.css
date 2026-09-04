@@ -474,7 +474,6 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 /* ---------- control surface: fanned floating cards ---------- */
 .lp-fan-sec { overflow: hidden; }
-.lp-index { display: block; margin-bottom: 4px; font-family: var(--lp-display-stack); font-size: clamp(46px, 8vw, 88px); line-height: .82; font-weight: 600; letter-spacing: -.05em; color: transparent; -webkit-text-stroke: 1.4px var(--lp-green-border); opacity: .75; }
 .lp-spark { display: inline-block; margin-left: 2px; color: var(--lp-green-bright); animation: lp-twinkle 2.6s ease-in-out infinite; }
 @keyframes lp-twinkle { 0%, 100% { opacity: .4; transform: scale(.8) rotate(0deg); } 50% { opacity: 1; transform: scale(1.18) rotate(90deg); } }
 

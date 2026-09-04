@@ -423,7 +423,6 @@ export function Landing() {
         <div className="lp-wrap">
           <Reveal>
             <div className="lp-section-head center">
-              <span className="lp-index">Part. 01</span>
               <span className="lp-eyebrow sq">The control surface <span className="lp-spark">✳</span></span>
               <h2>One claim, five states, nothing hidden.</h2>
               <p>Every partial return moves through the same auditable surface - evidence, split,
