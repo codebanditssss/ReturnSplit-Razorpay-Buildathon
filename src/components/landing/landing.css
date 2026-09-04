@@ -140,16 +140,8 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-hero-inner { position: relative; z-index: 1; }
 .lp-hero h1 { font-family: var(--lp-display-stack); font-weight: 620; letter-spacing: -.045em; line-height: .93; font-size: clamp(40px, 6.6vw, 82px); margin: 24px auto 0; }
 .lp-hero h1 span { display: block; text-wrap: balance; }
-.lp-hero h1 em { position: relative; font-style: normal; color: var(--lp-ink); white-space: nowrap; }
-/* (de-slop) brush/highlighter replaced with a calm accent underline set below the baseline */
-.lp-hero h1 em::after {
-  content: ""; position: absolute; left: 2%; right: 2%; bottom: -.16em; height: .09em;
-  background: var(--lp-green); border-radius: 999px; opacity: .9;
-}
+.lp-hero h1 em { font-style: normal; color: var(--lp-ink); white-space: nowrap; }
 .lp-hero-actions { display: flex; gap: 12px; justify-content: center; margin: 34px 0 0; flex-wrap: wrap; }
-.lp-hero-trust { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin: 28px 0 0; }
-.lp-hero-trust span { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--lp-text-2); }
-.lp-hero-trust svg { width: 15px; height: 15px; color: var(--lp-green); }
 
 /* status pill - faithful to app StatusPill */
 .lp-pill { display: inline-flex; align-items: center; gap: 5px; min-height: 23px; padding: 3px 9px; border: 1px solid transparent; border-radius: 999px; font-size: 11px; font-weight: 620; white-space: nowrap; }

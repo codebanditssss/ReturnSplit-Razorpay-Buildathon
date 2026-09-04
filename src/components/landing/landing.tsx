@@ -288,11 +288,6 @@ export function Landing() {
             <Link className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</Link>
             <Link className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">View demo claim</Link>
           </div>
-          <div className="lp-hero-trust">
-            <span>{I.check} Exact integer-paise planning</span>
-            <span>{I.check} No custody · simulation or Test Mode</span>
-            <span>{I.check} Unknown outcomes pause for reconciliation</span>
-          </div>
         </div>
         <div className="lp-wrap">
           <div className="lp-tour-shell lp-tour-shell-hero">
