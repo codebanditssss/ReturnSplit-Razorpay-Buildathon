@@ -356,13 +356,13 @@ export function Landing() {
         <div className="lp-wrap lp-hero-inner">
           <span className="lp-eyebrow">Razorpay Route · partial marketplace refunds</span>
           <h1>
-            <span>Refund one item.</span>
-            <span>Reverse the <em>exact</em> sellers.</span>
+            <span>One item comes back.</span>
+            <span>Reverse the <em>exact</em> transfer.</span>
           </h1>
           <p className="lp-hero-sub">
-            When a buyer returns part of a multi-vendor order, Razorpay can&rsquo;t tell which transfer to reverse.
-            ReturnSplit computes the correct per-seller paise, reverses the right Route transfers, then refunds the
-            buyer - behind a human approval and a tamper-evident trail.
+            A buyer sends part of a multi-vendor order back, and Razorpay Route can&rsquo;t tell whose transfer to
+            unwind. ReturnSplit computes each seller&rsquo;s share to the last paisa, reverses only the right transfers,
+            then refunds the buyer - behind human approval and a tamper-evident trail.
           </p>
           <div className="lp-hero-actions">
             <a className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</a>
