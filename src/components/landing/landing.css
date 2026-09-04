@@ -254,7 +254,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-doc { max-width: 900px; margin: 0 auto; border: 1px solid var(--lp-line); border-radius: 14px; background: var(--lp-surface); overflow: hidden; box-shadow: 0 30px 70px -50px rgba(14,28,22,.4); }
 .lp-doc-body { padding: 48px 52px; }
 .lp-doc-body blockquote { margin: 0; font-family: var(--lp-display-stack); font-weight: 400; letter-spacing: -.02em; line-height: 1.3; font-size: clamp(22px, 3vw, 34px); color: var(--lp-text); }
-.lp-doc-body blockquote b { color: var(--lp-danger); font-weight: 500; background: var(--lp-danger-soft); padding: 0 .12em; border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.lp-doc-body blockquote b { color: var(--lp-ink); font-weight: 600; }
 .lp-doc-cite { margin-top: 30px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--lp-text-3); flex-wrap: wrap; }
 .lp-doc-cite b { color: var(--lp-text-2); font-weight: 600; }
 .lp-doc-cite a { font-family: var(--lp-mono-stack); font-size: 12px; color: var(--lp-green); border-bottom: 1px solid var(--lp-green-border); }
@@ -333,7 +333,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-report-row { display: flex; align-items: baseline; gap: 12px; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
 .lp-report-row:last-child { border-bottom: 0; }
 .lp-report-row .lbl { font-family: var(--lp-mono-stack); font-size: 13.5px; color: #b6c6bd; white-space: nowrap; }
-.lp-report-row .lead { flex: 1; height: 1px; align-self: center; border-bottom: 1px dotted rgba(255,255,255,.22); }
+.lp-report-row .lead { flex: 1; }
 .lp-report-row .val { font-family: var(--lp-mono-stack); font-variant-numeric: tabular-nums; font-size: clamp(20px, 2.6vw, 26px); font-weight: 600; letter-spacing: -.02em; color: #fff; white-space: nowrap; }
 .lp-report-row .val em { font-style: normal; color: var(--lp-green-bright); }
 
@@ -378,7 +378,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-cta-card .lp-btn.lp-btn-ghost:hover { background: rgba(255,255,255,.06); }
 
 /* ============ FOOTER ============ */
-.lp-footer { padding: 76px 0 0; border-top: 1px solid var(--lp-line); }
+.lp-footer { padding: 76px 0 44px; border-top: 1px solid var(--lp-line); }
 .lp-footer-top { display: grid; grid-template-columns: 1.5fr repeat(3, 1fr); gap: 40px; }
 .lp-footer-col h5 { margin: 0 0 16px; font-family: var(--lp-mono-stack); font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--lp-text-3); }
 .lp-footer-col a { display: block; font-size: 14px; color: var(--lp-text-2); padding: 6px 0; transition: color .15s ease; }
@@ -386,27 +386,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-footer-lead { max-width: 34ch; }
 .lp-footer-lead p { margin: 18px 0 0; font-size: 14px; color: var(--lp-text-2); line-height: 1.55; }
 .lp-footer-note { margin-top: 48px; padding: 22px 0; border-top: 1px solid var(--lp-line); display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: 12.5px; color: var(--lp-text-3); }
-/* (de-slop) footer wordmark: outlined + low-contrast + shorter, calmer band — whispers, not shouts */
-.lp-ghost {
-  position: relative; margin-top: 40px; height: clamp(84px, 14vw, 176px); overflow: hidden;
-  border-radius: 22px 22px 0 0; background-color: #0b4130;
-  background-image:
-    radial-gradient(80% 130% at 18% 132%, #124e39 0%, rgba(18,78,57,0) 62%),
-    radial-gradient(70% 120% at 84% 128%, #0f5a41 0%, rgba(15,90,65,0) 58%),
-    linear-gradient(180deg, #0b4130 0%, #072b20 100%);
-}
-.lp-ghost::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .3; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
-}
-.lp-ghost span {
-  position: absolute; left: 50%; bottom: -.2em; transform: translateX(-50%);
-  font-family: var(--lp-display-stack); font-weight: 700; letter-spacing: -.05em;
-  font-size: clamp(60px, 15vw, 210px); line-height: 1; white-space: nowrap;
-  color: rgba(210,232,222,.055); -webkit-text-stroke: 1.5px rgba(210,232,222,.18);
-}
-.lp-ghost span em { font-style: normal; color: rgba(79,195,154,.09); -webkit-text-stroke: 1.5px rgba(79,195,154,.32); }
+/* (footer wordmark band removed — a giant wordmark slab reads like signage, not enterprise) */
 
 /* ============ ANIMATIONS ============ */
 @keyframes lp-pulse { 0% { box-shadow: 0 0 0 0 rgba(23,98,71,.4); } 70% { box-shadow: 0 0 0 12px rgba(23,98,71,0); } 100% { box-shadow: 0 0 0 0 rgba(23,98,71,0); } }
@@ -477,6 +457,18 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-srow-title { font-size: 15px; font-weight: 640; letter-spacing: -.015em; color: var(--lp-ink); }
 .lp-srow-body { margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: var(--lp-text-2); font-variant-numeric: tabular-nums; }
 .lp-srow-body b { color: var(--lp-ink); font-weight: 600; }
+
+/* money-split visualization inside the Split step — you see the refund divide */
+.lp-splitbar { display: flex; gap: 2px; height: 9px; margin-top: 13px; border-radius: 999px; overflow: hidden; background: var(--lp-line-2); }
+.lp-splitseg { height: 100%; }
+.lp-splitseg.rev { background: var(--lp-teal); }
+.lp-splitseg.con { background: var(--lp-gold); }
+.lp-splitlegend { display: flex; gap: 18px; margin-top: 9px; flex-wrap: wrap; }
+.lp-splitlegend span { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--lp-text-2); }
+.lp-splitlegend i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.lp-splitlegend .rev i { background: var(--lp-teal); }
+.lp-splitlegend .con i { background: var(--lp-gold); }
+.lp-splitlegend b { font-family: var(--lp-mono-stack); font-variant-numeric: tabular-nums; color: var(--lp-ink); font-weight: 600; }
 
 .lp-fcard-tag { padding: 3px 9px; border-radius: 99px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .lp-fcard-tag.green { color: var(--lp-green); background: var(--lp-green-soft); }
