@@ -12,6 +12,7 @@ import type {
   ClaimWorkbenchReceipt,
 } from "@/lib/claim-workbench-view";
 import type { LiabilityParty } from "@/lib/types";
+import { Avatar } from "./avatar";
 import { Icon } from "./icons";
 import { Card, Money, StatusPill } from "./ui";
 
@@ -458,7 +459,7 @@ export function ClaimWorkbench({
       <header className="page-header">
         <div className="page-heading">
           <div className="detail-heading"><h1>Return claim {claim.reference}</h1><StatusPill tone={currentTone}>{currentStatus}</StatusPill></div>
-          <div className="meta-line"><span>Order {order.reference}</span><span>{claim.customer.name}</span><span>Received {dateTime(claim.submittedAt)}</span></div>
+          <div className="meta-line"><span>Order {order.reference}</span><span className="meta-person"><Avatar name={claim.customer.name} size={26} />{claim.customer.name}</span><span>Received {dateTime(claim.submittedAt)}</span></div>
         </div>
       </header>
 

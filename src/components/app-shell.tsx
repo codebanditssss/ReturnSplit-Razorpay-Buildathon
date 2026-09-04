@@ -97,7 +97,7 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
         role={menuOpen ? "dialog" : undefined} aria-modal={menuOpen || undefined} aria-label={menuOpen ? "Primary navigation" : undefined}>
         <div className="brand-row">
           <Link className="brand" href="/claims" aria-label="ReturnSplit home">
-            <span className="brand-mark"><span /><span /></span><span>ReturnSplit</span>
+            <span className="brand-mark"><span /><span /></span><span className="brand-word">Return<span>Split</span></span>
           </Link>
           <button ref={sidebarCloseButtonRef} className="icon-button sidebar-close" aria-label="Close navigation" onClick={() => closeMobileMenu()}>
             <Icon name="x" />
@@ -136,7 +136,7 @@ export function AppShell({ children, providerMode, providerLabel }: { children: 
       <div className="dashboard-frame">
         <div ref={mobileBarRef} className="mobile-bar" inert={menuOpen}>
           <button ref={menuButtonRef} className="icon-button" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
-          <Link className="brand" href="/claims"><span className="brand-mark"><span /><span /></span><span>ReturnSplit</span></Link>
+          <Link className="brand" href="/claims"><span className="brand-mark"><span /><span /></span><span className="brand-word">Return<span>Split</span></span></Link>
           <span className="mobile-avatar">
             <Image className="profile-photo" src="/khushi-diwan-avatar.webp" alt="Khushi Diwan" width={32} height={32} priority />
           </span>

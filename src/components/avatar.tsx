@@ -1,4 +1,14 @@
-/* OneClient-style initial avatar: circular, deterministic tint per name. */
+import Image from "next/image";
+
+const AVATAR_SOURCES: Readonly<Record<string, string>> = {
+  Tamish: "/avatars/tamish.svg",
+  Priyanshu: "/avatars/priyanshu.svg",
+  Akshat: "/avatars/akshat.svg",
+  Anaya: "/avatars/anaya.svg",
+  Khushi: "/avatars/khushi.svg",
+  Yash: "/avatars/yash.svg",
+};
+
 const PALETTE: ReadonlyArray<readonly [string, string]> = [
   ["#dbe9e2", "#176247"], // green
   ["#e6e0f1", "#5b3f8c"], // violet
@@ -23,6 +33,22 @@ function tintOf(name: string): readonly [string, string] {
 }
 
 export function Avatar({ name, size = 30 }: { name: string; size?: number }) {
+  const source = AVATAR_SOURCES[name];
+  if (source) {
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          display: "block", flex: "0 0 auto", overflow: "hidden",
+          width: size, height: size, border: "1px solid rgba(29, 54, 43, .12)",
+          borderRadius: "50%", background: "#edf3ef",
+        }}
+      >
+        <Image src={source} alt="" width={size} height={size} unoptimized style={{ display: "block", width: "100%", height: "100%" }} />
+      </span>
+    );
+  }
+
   const [bg, fg] = tintOf(name);
   return (
     <span

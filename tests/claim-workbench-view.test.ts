@@ -19,5 +19,5 @@ test("claim workbench payload excludes raw customer and provider identifiers", (
     assert.doesNotMatch(serialized, new RegExp(transfer.linkedAccountId));
   }
   assert.match(serialized, /\u2022\u2022\u2022\u2022/);
-  assert.match(serialized, /Maya Rao/);
+  assert.match(serialized, /Tamish/);
 });

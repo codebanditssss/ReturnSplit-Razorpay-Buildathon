@@ -57,18 +57,18 @@ export const policies: readonly Policy[] = [
   },
 ] as const;
 
-const maya: Customer = { id: "cus_maya_rao", name: "Maya Rao", email: "maya.rao@example.com" };
-const arjun: Customer = { id: "cus_arjun_mehta", name: "Arjun Mehta", email: "arjun.mehta@example.com" };
-const leena: Customer = { id: "cus_leena_das", name: "Leena Das", email: "leena.das@example.com" };
-const kabir: Customer = { id: "cus_kabir_sen", name: "Kabir Sen", email: "kabir.sen@example.com" };
-const sana: Customer = { id: "cus_sana_khan", name: "Sana Khan", email: "sana.khan@example.com" };
-const rohan: Customer = { id: "cus_rohan_shah", name: "Rohan Shah", email: "rohan.shah@example.com" };
+const tamish: Customer = { id: "cus_tamish", name: "Tamish", email: "tamish@example.com" };
+const priyanshu: Customer = { id: "cus_priyanshu", name: "Priyanshu", email: "priyanshu@example.com" };
+const akshat: Customer = { id: "cus_akshat", name: "Akshat", email: "akshat@example.com" };
+const anaya: Customer = { id: "cus_anaya", name: "Anaya", email: "anaya@example.com" };
+const yash: Customer = { id: "cus_yash", name: "Yash", email: "yash@example.com" };
+const khushi: Customer = { id: "cus_khushi", name: "Khushi", email: "khushi@example.com" };
 
 export const orders: readonly Order[] = [
   {
     id: "MM-18472",
     reference: "MM-18472",
-    customer: maya,
+    customer: tamish,
     paymentId: "pay_Q8m2Fw9Kx7Ld3P",
     placedAt: "2026-08-29T10:22:00.000Z",
     capturedAt: "2026-08-29T10:23:11.000Z",
@@ -90,7 +90,7 @@ export const orders: readonly Order[] = [
   {
     id: "MM-18489",
     reference: "MM-18489",
-    customer: arjun,
+    customer: priyanshu,
     paymentId: "pay_demo_ambiguous",
     placedAt: "2026-08-30T08:10:00.000Z",
     capturedAt: "2026-08-30T08:11:00.000Z",
@@ -111,7 +111,7 @@ export const orders: readonly Order[] = [
   {
     id: "MM-18501",
     reference: "MM-18501",
-    customer: leena,
+    customer: akshat,
     paymentId: "pay_demo_courier",
     placedAt: "2026-08-30T12:40:00.000Z",
     capturedAt: "2026-08-30T12:41:00.000Z",
@@ -131,7 +131,7 @@ export const orders: readonly Order[] = [
   {
     id: "MM-18518",
     reference: "MM-18518",
-    customer: kabir,
+    customer: anaya,
     paymentId: "pay_demo_blocked",
     placedAt: "2026-08-31T07:50:00.000Z",
     capturedAt: "2026-08-31T07:51:00.000Z",
@@ -151,7 +151,7 @@ export const orders: readonly Order[] = [
   {
     id: "MM-18394",
     reference: "MM-18394",
-    customer: sana,
+    customer: yash,
     paymentId: "pay_demo_completed",
     placedAt: "2026-08-24T09:05:00.000Z",
     capturedAt: "2026-08-24T09:06:00.000Z",
@@ -171,7 +171,7 @@ export const orders: readonly Order[] = [
   {
     id: "MM-18527",
     reference: "MM-18527",
-    customer: rohan,
+    customer: khushi,
     paymentId: "pay_demo_retry",
     placedAt: "2026-09-01T13:20:00.000Z",
     capturedAt: "2026-09-01T13:21:00.000Z",
@@ -294,7 +294,7 @@ export const claims: readonly Claim[] = [
     reference: "RET-260903-031",
     orderId: goldenOrder.id,
     order: orderSummary(goldenOrder),
-    customer: maya,
+    customer: tamish,
     status: "ready_for_approval",
     statusLabel: "Ready for approval",
     submittedAt: "2026-09-03T09:42:00.000Z",
@@ -312,7 +312,7 @@ export const claims: readonly Claim[] = [
     reference: "RET-260903-033",
     orderId: orders[1].id,
     order: orderSummary(orders[1]),
-    customer: arjun,
+    customer: priyanshu,
     status: "needs_review",
     statusLabel: "Needs item match",
     submittedAt: "2026-09-03T08:18:00.000Z",
@@ -335,7 +335,7 @@ export const claims: readonly Claim[] = [
     reference: "RET-260903-035",
     orderId: orders[2].id,
     order: orderSummary(orders[2]),
-    customer: leena,
+    customer: akshat,
     status: "needs_review",
     statusLabel: "Liability review",
     submittedAt: "2026-09-03T08:52:00.000Z",
@@ -359,7 +359,7 @@ export const claims: readonly Claim[] = [
     reference: "RET-260903-038",
     orderId: orders[3].id,
     order: orderSummary(orders[3]),
-    customer: kabir,
+    customer: anaya,
     status: "blocked",
     statusLabel: "Blocked",
     submittedAt: "2026-09-03T09:12:00.000Z",
@@ -377,7 +377,7 @@ export const claims: readonly Claim[] = [
     reference: "RET-260831-024",
     orderId: orders[4].id,
     order: orderSummary(orders[4]),
-    customer: sana,
+    customer: yash,
     status: "completed",
     statusLabel: "Completed",
     submittedAt: "2026-08-31T06:02:00.000Z",
@@ -398,7 +398,7 @@ export const claims: readonly Claim[] = [
     reference: "RET-260903-041",
     orderId: orders[5].id,
     order: orderSummary(orders[5]),
-    customer: rohan,
+    customer: khushi,
     status: "processing",
     statusLabel: "Retry available",
     submittedAt: "2026-09-03T10:03:00.000Z",

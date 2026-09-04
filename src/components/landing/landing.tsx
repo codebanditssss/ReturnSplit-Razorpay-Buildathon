@@ -151,7 +151,7 @@ function Workbench() {
               <h4>Return claim RET-260903-031</h4>
               <span className="lp-pill green">Ready for approval</span>
             </div>
-            <div className="lp-wb-meta">Order MM-18472 · Maya Rao · Received 3 Sep 2026 · Creo Market Returns v3.2 §7.3</div>
+            <div className="lp-wb-meta">Order MM-18472 · Tamish · Received 3 Sep 2026 · Creo Market Returns v3.2 §7.3</div>
             <div className="lp-wb-grid">
               <div className="lp-mm">
                 <div className="lp-mm-h">Money movement</div>
@@ -518,7 +518,7 @@ export function Landing() {
                 <div className="lp-cell-spacer" />
                 <div className="lp-block">
                   <div className="lp-block-h">
-                    <span className="lp-mono">RET-260903-038 · Kabir Sen</span>
+                    <span className="lp-mono">RET-260903-038 · Anaya</span>
                     <span className="lp-pill red">Approval blocked</span>
                   </div>
                   <p>Needs ₹850.85 · only ₹49.15 reversible → approval blocked, reconciliation required.</p>
