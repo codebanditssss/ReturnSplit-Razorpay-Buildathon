@@ -116,10 +116,6 @@ function Workbench() {
     <div className="lp-frame-wrap" ref={ref}>
       <div className="lp-frame-glow" />
       <div className="lp-frame">
-        <div className="lp-frame-bar">
-          <i /><i /><i />
-          <span className="lp-frame-url">app.returnsplit.dev/claims/<b>RET-260903-031</b></span>
-        </div>
         <div className="lp-wb">
           <aside className="lp-wb-side">
             <div className="lp-wb-brand"><Mark />ReturnSplit</div>
@@ -247,14 +243,29 @@ function FaqItem({ q, a, open, onClick }: { q: string; a: string; open: boolean;
 
 /* ---------- page ---------- */
 export function Landing() {
-  const [stuck, setStuck] = useState(false);
+  const [atTop, setAtTop] = useState(true);
+  const [dir, setDir] = useState<"up" | "down">("up");
   const [openFaq, setOpenFaq] = useState(0);
   useEffect(() => {
-    const onScroll = () => setStuck(window.scrollY > 8);
-    onScroll();
+    let last = window.scrollY;
+    let ticking = false;
+    const update = () => {
+      const y = window.scrollY;
+      setAtTop(y < 8);
+      if (y - last > 4) setDir("down");
+      else if (last - y > 4) setDir("up");
+      last = y;
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+  const float = !atTop;
+  const compact = float && dir === "down";
   // hide the window scrollbar only while the landing page is mounted
   useEffect(() => {
     const root = document.documentElement;
@@ -264,8 +275,8 @@ export function Landing() {
 
   return (
     <>
-      <nav className={`lp-nav${stuck ? " is-stuck" : ""}`}>
-        <div className="lp-wrap lp-nav-inner">
+      <nav className={`lp-nav${float ? " is-float" : ""}${compact ? " is-compact" : ""}`}>
+        <div className="lp-nav-shell">
           <a className="lp-word" href="#top">Return<span className="s">Split</span></a>
           <div className="lp-nav-links">
             <a href="#how">How it works</a>
@@ -328,7 +339,6 @@ export function Landing() {
         <div className="lp-wrap">
           <Reveal>
             <div className="lp-doc">
-              <div className="lp-doc-bar"><span className="dot" /> razorpay/docs/payments/route/ - <b>refunds.md</b></div>
               <div className="lp-doc-body">
                 <blockquote>
                   For partial refunds on a payment transferred to multiple accounts, <b>Razorpay cannot determine which
