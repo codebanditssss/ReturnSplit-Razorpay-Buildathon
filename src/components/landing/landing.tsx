@@ -226,7 +226,7 @@ const FAQS: { q: string; a: string }[] = [
   { q: "What if a seller already withdrew their payout?", a: "That is the shortfall case (see claim RET-260903-038: only ₹49.15 was reversible). ReturnSplit reverses what exists, opens an exception case, and carries the residual - it never silently absorbs a loss or blindly retries." },
   { q: "Is the money math actually safe?", a: "Every rupee is computed in integer paise with largest-remainder rounding - no floats. Across a 64-record synthetic control set the engine passed 64/64 fixture assertions with 0 rounding drift, ₹0 mis-attributed to the wrong seller, and 0 unsafe automations. If a plan doesn't balance to the paise, it doesn't run." },
   { q: "What about audit and compliance?", a: "Every decision is written to a hash-chained, append-only trail - the kind of 8-year, non-disableable, India-resident record MCA Rule 3(1) expects. Each executed plan reconciles back against Razorpay as the source of truth." },
-  { q: "Can I try it on my own returns?", a: "Yes. Bring one Route-based marketplace and we'll run a free refund-leakage audit on your historical data, then show you exactly where paise are being lost today." },
+  { q: "Can I try it on my own returns?", a: "Open the workbench and walk a real partial-refund claim end to end - the per-seller split, the reversals, the approval step, and the reconciled trail. Every figure is deterministic, so you can replay the same claim and get the same paise." },
 ];
 
 function FaqItem({ q, a, open, onClick }: { q: string; a: string; open: boolean; onClick: () => void }) {
@@ -286,8 +286,8 @@ export function Landing() {
             <a href="#faq">FAQ</a>
           </div>
           <div className="lp-nav-cta">
-            <a className="lp-btn lp-btn-ghost" href="/claims">Open workbench</a>
-            <a className="lp-btn lp-btn-primary" href="#cta">Book a pilot</a>
+            <a className="lp-btn lp-btn-ghost" href="/claims/RET-260903-031">See a live claim</a>
+            <a className="lp-btn lp-btn-primary" href="/claims">Open the workbench</a>
           </div>
         </div>
       </nav>
@@ -307,7 +307,7 @@ export function Landing() {
             buyer - behind a human approval and a tamper-evident trail.
           </p>
           <div className="lp-hero-actions">
-            <a className="lp-btn lp-btn-primary lp-btn-lg" href="#cta">Book a pilot {I.arrow}</a>
+            <a className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</a>
             <a className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims">See a live claim</a>
           </div>
           <div className="lp-hero-trust">
@@ -542,12 +542,12 @@ export function Landing() {
           <Reveal>
             <div className="lp-cta-card">
               <div className="lp-dots" />
-              <h2>Stop guessing which transfer to reverse.</h2>
-              <p>Bring one Route-based marketplace. We&rsquo;ll run a free refund-leakage audit on your historical data
-                and show you the paise you&rsquo;re losing.</p>
+              <h2>See exactly which transfer to reverse.</h2>
+              <p>Open the workbench and walk a real partial-refund claim end to end - the per-seller split, the
+                right reversals, human approval, and the reconciled trail.</p>
               <div className="lp-cta-actions">
-                <a className="lp-btn lp-btn-primary lp-btn-lg" href="mailto:hello@returnsplit.dev?subject=ReturnSplit%20pilot">Book a pilot {I.arrow}</a>
-                <a className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims">Open the workbench</a>
+                <a className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</a>
+                <a className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">See a live claim</a>
               </div>
             </div>
           </Reveal>
@@ -577,8 +577,8 @@ export function Landing() {
             </div>
             <div className="lp-footer-col">
               <h5>Company</h5>
-              <a href="#cta">Book a pilot</a>
-              <a href="mailto:hello@returnsplit.dev">Contact</a>
+              <a href="/claims">Open workbench</a>
+              <a href="mailto:hello@returnsplit.dev">Get in touch</a>
               <a href="#faq">FAQ</a>
             </div>
           </div>
