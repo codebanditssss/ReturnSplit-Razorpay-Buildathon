@@ -30,7 +30,7 @@ export default function SettingsPage() {
               <div className="check-row"><span className="check-mark"><Icon name="check" /></span><span>Unknown provider outcomes pause for reconciliation</span></div>
             </div>
           </Card>
-          <Card title="Controls & evidence" description="Synthetic safety checks and forecast evidence—not production accuracy.">
+          <Card title="Controls & evidence" description="Synthetic safety checks and forecast evidence-not production accuracy.">
             <div className="settings-list">
               <div className="settings-row"><div><strong>Money invariants</strong><p>Seeded allocation and state-transition tests</p></div><StatusPill tone="active">10,000 trials</StatusPill></div>
               <div className="settings-row"><div><strong>Duplicate side effects</strong><p>Replay and idempotency scenarios</p></div><span className="money">0</span></div>

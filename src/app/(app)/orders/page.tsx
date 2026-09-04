@@ -51,7 +51,7 @@ export default async function OrdersPage() {
             <th scope="row" data-label="Order"><span className="table-primary">{order.reference}</span><span className="table-secondary">{dateOnly(order.placedAt)}</span></th>
             <td data-label="Customer"><span className="table-primary">{order.customer.name}</span></td>
             <td data-label="Seller">{sellerLabel}</td><td data-label="Paid"><Money paise={order.capturedPaymentPaise} /></td>
-            <td data-label="Claim"><span className="mono">{claim?.reference ?? "—"}</span></td><td data-label="Status"><div className="operation-state"><StatusPill tone={status.tone}>{status.label}</StatusPill>{status.detail && <span className="table-secondary operation-detail">{status.detail}</span>}</div></td>
+            <td data-label="Claim"><span className="mono">{claim?.reference ?? "-"}</span></td><td data-label="Status"><div className="operation-state"><StatusPill tone={status.tone}>{status.label}</StatusPill>{status.detail && <span className="table-secondary operation-detail">{status.detail}</span>}</div></td>
             <td data-label="Open">{claim && <Link href={`/claims/${claim.reference}`} className="row-link">View claim <Icon name="chevron-right" /></Link>}</td>
           </tr>)}</tbody>
         </table>

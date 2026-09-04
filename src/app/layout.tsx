@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { AppShell } from "@/components/app-shell";
-import { getProviderIdentity } from "@/server/demo-runtime";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,10 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const provider = getProviderIdentity();
   return (
     <html lang="en">
-      <body><AppShell providerMode={provider.mode} providerLabel={provider.label}>{children}</AppShell></body>
+      <body>{children}</body>
     </html>
   );
 }

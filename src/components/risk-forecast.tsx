@@ -93,7 +93,7 @@ export function RiskForecast({ initial, reservePaise, reserveSource, openExposur
               <caption className="sr-only">Fourteen days of refund history followed by the selected forecast horizon</caption>
               <thead><tr><th scope="col">Date</th><th scope="col">Series</th><th scope="col">{lowBoundLabel}</th><th scope="col">{usesModelQuantiles ? "P50" : "Central"}</th><th scope="col">{highBoundLabel}</th></tr></thead>
               <tbody>
-                {data.history.slice(-14).map((point) => <tr key={`history-${point.date}`}><th scope="row">{shortDate(point.date)}</th><td>{data.isIllustrative ? "Synthetic history" : "Observed"}</td><td aria-label="Not applicable">—</td><td>{formatMoney(point.valuePaise)}</td><td aria-label="Not applicable">—</td></tr>)}
+                {data.history.slice(-14).map((point) => <tr key={`history-${point.date}`}><th scope="row">{shortDate(point.date)}</th><td>{data.isIllustrative ? "Synthetic history" : "Observed"}</td><td aria-label="Not applicable">-</td><td>{formatMoney(point.valuePaise)}</td><td aria-label="Not applicable">-</td></tr>)}
                 {data.forecast.map((point) => <tr key={`forecast-${point.date}`}><th scope="row">{shortDate(point.date)}</th><td>Forecast</td><td>{formatMoney(point.p10Paise)}</td><td>{formatMoney(point.p50Paise)}</td><td>{formatMoney(point.p90Paise)}</td></tr>)}
               </tbody>
             </table></div>

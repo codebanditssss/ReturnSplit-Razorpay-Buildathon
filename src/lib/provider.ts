@@ -87,7 +87,7 @@ interface DemoOperation {
  */
 export class DemoRouteProvider implements RoutePaymentProvider {
   readonly mode = "demo" as const;
-  readonly label = "Demo data — no Razorpay request";
+  readonly label = "Demo data - no Razorpay request";
   readonly isLive = false as const;
 
   private readonly transferBalances = new Map<string, Paise>();
