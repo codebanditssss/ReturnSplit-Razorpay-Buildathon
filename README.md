@@ -122,24 +122,6 @@ Live Razorpay keys are rejected. Seeded demo identifiers are also blocked from t
 | [`/risk`](http://localhost:3000/risk) | 7/14/30-day aggregate exposure forecast with source label |
 | [`/settings`](http://localhost:3000/settings) | Provider identity, controls, reset, and seeded scenarios |
 
-## Screenshots
-
-### Claims queue
-
-![ReturnSplit claims queue](docs/screenshots/claims-queue.png)
-
-### Golden claim workbench
-
-![ReturnSplit golden claim workbench](docs/screenshots/golden-claim.png)
-
-### Control evaluation
-
-![ReturnSplit 64-record control evaluation](docs/screenshots/evaluation.png)
-
-### Refund reserve planning
-
-![ReturnSplit refund reserve forecast](docs/screenshots/risk-forecast.png)
-
 ## Run locally
 
 The core demo needs no provider or model credentials.
