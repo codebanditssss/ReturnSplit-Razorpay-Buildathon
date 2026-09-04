@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import "./landing.css";
 
@@ -14,8 +15,8 @@ function useCountUp(target: number, run: boolean, ms = 1100) {
   useEffect(() => {
     if (!run) return;
     if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      setV(target);
-      return;
+      const raf = requestAnimationFrame(() => setV(target));
+      return () => cancelAnimationFrame(raf);
     }
     let raf = 0;
     const start = performance.now();
@@ -104,7 +105,7 @@ const I = {
   clock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>,
 };
 
-/* ---------- real golden-case data (order MM-18472 / claim RET-260903-031) ---------- */
+/* ---------- seeded golden-case fixture (order MM-18472 / claim RET-260903-031) ---------- */
 const CUSTOMER = 232854;  // ₹2,328.54 customer refund
 const AAVYA = 197926;     // ₹1,979.26 reversed from Aavya Textiles
 const MARKET = 34928;     // ₹349.28 marketplace contribution
@@ -112,6 +113,8 @@ const MARKET = 34928;     // ₹349.28 marketplace contribution
 /* code sample rendered from tokens so no literal braces sit in JSX text */
 type Tok = { t: string; c?: string };
 const CODE: Tok[][] = [
+  [{ t: "// conceptual flow - not a shipped SDK", c: "c" }],
+  [],
   [{ t: "const", c: "k" }, { t: " plan " }, { t: "=", c: "k" }, { t: " " }, { t: "await", c: "k" }, { t: " returnsplit." }, { t: "plan", c: "fn" }, { t: "({" }],
   [{ t: "  claim", c: "n" }, { t: ": " }, { t: "\"RET-260903-031\"", c: "s" }, { t: "," }],
   [{ t: "  returnedLines", c: "n" }, { t: ": [{ sku: " }, { t: "\"indigo-kurta\"", c: "s" }, { t: ", qty: " }, { t: "1", c: "n" }, { t: " }]," }],
@@ -123,24 +126,24 @@ const CODE: Tok[][] = [
   [{ t: "plan." }, { t: "marketplaceFundedPaise", c: "n" }, { t: ";  " }, { t: "// 34928", c: "c" }],
   [],
   [{ t: "await", c: "k" }, { t: " returnsplit." }, { t: "execute", c: "fn" }, { t: "(plan." }, { t: "id", c: "n" }, { t: ", {" }],
-  [{ t: "  approvedBy", c: "n" }, { t: ": operator,  " }, { t: "// maker-checker", c: "c" }],
+  [{ t: "  approvedBy", c: "n" }, { t: ": operator,  " }, { t: "// fingerprint-bound", c: "c" }],
   [{ t: "});" }],
 ];
 
-/* marquee content - real claims + amounts */
+/* marquee content - seeded demo fixtures + amounts */
 const TICKER: React.ReactNode[] = [
-  <><b>RET-260903-031</b> reverse <span className="t">₹1,979.26</span> → Aavya Textiles</>,
-  <><b>RET-260831-024</b> settled <span className="t">₹1,499.00</span> → Field Notes</>,
+  <><b>RET-260903-031</b> demo reversal <span className="t">₹1,979.26</span> → Aavya Textiles</>,
+  <><b>RET-260831-024</b> demo completed <span className="t">₹1,499.00</span> → Field Notes</>,
   <>Σ reversals + platform = customer refund</>,
   <><b>RET-260903-038</b> <span className="g">shortfall</span> · only ₹49.15 reversible</>,
   <><b>MM-18472</b> Aavya Textiles + Noya Footwear · buyer keeps the sneakers</>,
-  <>64 / 64 fixtures · 0 unsafe automations · ₹0 wrong-seller</>,
+  <>64 / 64 synthetic fixtures · 0 unsafe automations · ₹0 wrong-seller overage</>,
 ];
 
-/* ---------- control-surface states (one real claim, RET-260903-031) ---------- */
+/* ---------- control-surface states (one seeded demo claim, RET-260903-031) ---------- */
 type SurfaceStep = { tag: string; tone: string; title: string; body: React.ReactNode };
 const STEPS: SurfaceStep[] = [
-  { tag: "Evidence", tone: "blue", title: "Return logged", body: <>Order <b>MM-18472</b> · 2 items across Aavya + Noya · photos and reason attached.</> },
+  { tag: "Evidence", tone: "blue", title: "Return logged", body: <>Order <b>MM-18472</b> · 2 items across Aavya + Noya · precomputed returned-line and reason fixture.</> },
   { tag: "Split", tone: "gold", title: "Refund apportioned", body: <>
     <b>₹2,328.54</b> refund resolves to <b>₹1,979.26</b> seller reversal + <b>₹349.28</b> platform contribution, in integer paise.
     <span className="lp-splitbar" aria-hidden>
@@ -152,9 +155,9 @@ const STEPS: SurfaceStep[] = [
       <span className="con"><i />Platform · <b>₹349.28</b> · 15%</span>
     </span>
   </> },
-  { tag: "Reverse", tone: "green", title: "Route reversal drafted", body: <><b>₹1,979.26</b> to Aavya Textiles (acc_demo_aavya) with an idempotency key set before submission.</> },
-  { tag: "Approve", tone: "green", title: "Maker-checker held", body: <>Nothing moves until an operator signs off; the request fingerprint is bound to that approval.</> },
-  { tag: "Reconcile", tone: "green", title: "Balanced and closed", body: <>Σ seller reversals + platform contribution = customer refund · 0 wrong-seller · settled in 0.42s.</> },
+  { tag: "Reverse", tone: "green", title: "Route reversal drafted", body: <>The plan targets <b>₹1,979.26</b> against Aavya Textiles&rsquo; seeded Route transfer; after approval, execution records intent and a stable receipt before submission.</> },
+  { tag: "Approve", tone: "green", title: "Human approval held", body: <>Nothing moves until a named operator signs off; the exact plan fingerprint is bound to that approval.</> },
+  { tag: "Reconcile", tone: "green", title: "Simulated and closed", body: <>The simulator confirms the seller reversal before the customer refund · balanced to the paise.</> },
 ];
 
 /* ---------- hero product panel: faithful mini-workbench ---------- */
@@ -217,10 +220,10 @@ function Workbench() {
               <div className="lp-act">
                 <div className="lp-act-eye">Approval summary</div>
                 <div className="lp-act-amt">{rupees(total)}</div>
-                <div className="lp-act-sub">1 transfer reversed · buyer keeps the sneakers</div>
+                <div className="lp-act-sub">1 transfer to reverse · buyer keeps the sneakers</div>
                 <div className="lp-act-div" />
                 <div className="lp-approve lp-pulse">{I.check} Approve &amp; execute</div>
-                <div className="lp-safe">{I.lock} Signed by Priyanshu · maker-checker</div>
+                <div className="lp-safe">{I.lock} Named operator · fingerprint-bound plan</div>
               </div>
             </div>
           </div>
@@ -238,7 +241,7 @@ function Mark() {
 function ControlReport() {
   const { ref, seen } = useInView<HTMLDivElement>(0.35);
   const fixtures = useCountUp(64, seen, 1300);
-  const recon = useCountUp(100, seen, 1300);
+  const exceptions = useCountUp(16, seen, 1300);
   return (
     <div className="lp-report" ref={ref}>
       <div className="lp-report-bar">
@@ -257,14 +260,14 @@ function ControlReport() {
           <span className="val">0</span>
         </div>
         <div className="lp-report-row">
-          <span className="lbl">paise to the wrong seller</span>
+          <span className="lbl">wrong-seller overage</span>
           <span className="lead" />
           <span className="val">₹0</span>
         </div>
         <div className="lp-report-row">
-          <span className="lbl">reconciled to Razorpay</span>
+          <span className="lbl">expected exceptions surfaced</span>
           <span className="lead" />
-          <span className="val">{recon}<em> %</em></span>
+          <span className="val">{exceptions}<em> / 16</em></span>
         </div>
       </div>
     </div>
@@ -273,12 +276,12 @@ function ControlReport() {
 
 /* ---------- FAQ ---------- */
 const FAQS: { q: string; a: string }[] = [
-  { q: "Does ReturnSplit ever hold my money?", a: "No. ReturnSplit is an orchestration layer - it reasons about the split and calls your own Razorpay account to move funds. It never pools or custodies money, so it is not a payment aggregator. Razorpay stays the system of record." },
-  { q: "How is this different from Razorpay's refund API?", a: "For a partial refund on a payment split across multiple Route transfers, Razorpay cannot decide which transfer to reverse - its own docs say so. ReturnSplit computes the exact per-seller paise, reverses the right transfers, then refunds the buyer, in one crash-safe order." },
-  { q: "What if a seller already withdrew their payout?", a: "That is the shortfall case (see claim RET-260903-038: only ₹49.15 was reversible). ReturnSplit reverses what exists, opens an exception case, and carries the residual - it never silently absorbs a loss or blindly retries." },
-  { q: "Is the money math actually safe?", a: "Every rupee is computed in integer paise with largest-remainder rounding - no floats. Across a 64-record synthetic control set the engine passed 64/64 fixture assertions with 0 rounding drift, ₹0 mis-attributed to the wrong seller, and 0 unsafe automations. If a plan doesn't balance to the paise, it doesn't run." },
-  { q: "What about audit and compliance?", a: "Every decision is written to a hash-chained, append-only trail - the kind of 8-year, non-disableable, India-resident record MCA Rule 3(1) expects. Each executed plan reconciles back against Razorpay as the source of truth." },
-  { q: "Can I try it on my own returns?", a: "Open the workbench and walk a real partial-refund claim end to end - the per-seller split, the reversals, the approval step, and the reconciled trail. Every figure is deterministic, so you can replay the same claim and get the same paise." },
+  { q: "Does ReturnSplit ever hold my money?", a: "No. The default provider is a deterministic simulator, and the optional adapter accepts Razorpay Test Mode credentials only. ReturnSplit never pools or custodies funds; live keys are rejected." },
+  { q: "How is this different from Razorpay's refund API?", a: "For a partial refund on a payment split across multiple Route transfers, Razorpay cannot decide which transfer to reverse - its own docs say so. This prototype computes the per-seller paise and demonstrates reversal-before-refund ordering in a resumable, process-local saga. Durable crash recovery remains production work." },
+  { q: "What if a seller already withdrew their payout?", a: "The demo blocks approval when the reversible balance is insufficient (claim RET-260903-038 has only ₹49.15 available), exposes the residual, and can open an owned payments-reconciliation case. It does not silently continue or write off the gap." },
+  { q: "Is the money math actually safe?", a: "Amounts are computed in integer paise with largest-remainder rounding. Across 64 pre-structured synthetic records, the engine matched all expected finance-control decisions with ₹0 wrong-seller overage and 0 unsafe automations. That is fixture agreement, not extraction accuracy or live-provider evidence." },
+  { q: "What audit record does the prototype provide?", a: "The workbench records process-local approval, execution, and operations history and can generate a redacted audit export. It is not durable, signed, hash-chained, WORM-retained, or a compliance record; production needs an authenticated, tenant-scoped, tamper-evident store." },
+  { q: "What can I try today?", a: "Open the workbench and replay seeded partial-refund scenarios through the deterministic split, human approval, simulated execution, and audit export. The fixtures are synthetic and do not ingest a live merchant return." },
 ];
 
 function FaqItem({ q, a, open, onClick }: { q: string; a: string; open: boolean; onClick: () => void }) {
@@ -343,8 +346,8 @@ export function Landing() {
             <a href="#faq">FAQ</a>
           </div>
           <div className="lp-nav-cta">
-            <a className="lp-btn lp-btn-ghost" href="/claims/RET-260903-031">See a live claim</a>
-            <a className="lp-btn lp-btn-primary" href="/claims">Open the workbench</a>
+            <Link className="lp-btn lp-btn-ghost" href="/claims/RET-260903-031">View demo claim</Link>
+            <Link className="lp-btn lp-btn-primary" href="/claims">Open the workbench</Link>
           </div>
         </div>
       </nav>
@@ -360,17 +363,17 @@ export function Landing() {
           </h1>
           <p className="lp-hero-sub">
             A buyer sends part of a multi-vendor order back, and Razorpay Route can&rsquo;t tell whose transfer to
-            unwind. ReturnSplit computes each seller&rsquo;s share to the last paisa, reverses only the right transfers,
-            then refunds the buyer - behind human approval and a tamper-evident trail.
+            unwind. ReturnSplit computes each seller&rsquo;s share to the last paisa, then the simulator or Test Mode
+            adapter follows reversal-before-refund ordering behind human approval and a process-local audit history.
           </p>
           <div className="lp-hero-actions">
-            <a className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</a>
-            <a className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">See a live claim</a>
+            <Link className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</Link>
+            <Link className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">View demo claim</Link>
           </div>
           <div className="lp-hero-trust">
-            <span>{I.check} Integer-paise, provably balanced</span>
-            <span>{I.check} Never touches your funds</span>
-            <span>{I.check} Idempotent, fail-closed execution</span>
+            <span>{I.check} Exact integer-paise planning</span>
+            <span>{I.check} No custody · simulation or Test Mode</span>
+            <span>{I.check} Unknown outcomes pause for reconciliation</span>
           </div>
         </div>
         <div className="lp-wrap"><Workbench /></div>
@@ -397,16 +400,16 @@ export function Landing() {
           <Reveal>
             <div className="lp-section-head center">
               <span className="lp-eyebrow sq">The control surface</span>
-              <h2>One claim, five states, nothing hidden.</h2>
-              <p>Every partial return moves through the same auditable surface - evidence, split,
-                reversal, approval, reconciliation. Here is claim RET-260903-031, start to close.</p>
+              <h2>One seeded claim, five illustrated steps.</h2>
+              <p>Each seeded scenario is presented on the same reviewable surface - evidence, split, reversal, approval,
+                reconciliation. Here is demo claim RET-260903-031, start to close.</p>
             </div>
           </Reveal>
           <Reveal>
             <div className="lp-surface">
               <div className="lp-surface-bar">
                 <span className="lp-surface-id">{I.scroll}RET-260903-031</span>
-                <span className="lp-surface-live"><span className="lp-fan-dot" />Reversal confirmed · 0.42s · <b>idempotent</b></span>
+                <span className="lp-surface-live"><span className="lp-fan-dot" />Simulation · reversal before refund · <b>replayable</b></span>
               </div>
               <ol className="lp-surface-rail">
                 {STEPS.map((s, i) => {
@@ -456,9 +459,9 @@ export function Landing() {
           <Reveal>
             <div className="lp-section-head center">
               <span className="lp-eyebrow sq">The control loop</span>
-              <h2>Evidence in. Correct money out. Every step recorded.</h2>
-              <p>ReturnSplit runs one auditable state machine after a return is raised. Reversals are compensable and
-                retryable; the buyer refund is the single point of no return.</p>
+              <h2>Evidence in. Balanced plan out. Each demo step recorded.</h2>
+              <p>After a return is approved, the prototype runs a reviewable state machine. It records intent before
+                provider calls, pauses unknown outcomes for reconciliation, and waits for confirmed reversals before refunding.</p>
             </div>
           </Reveal>
           <Reveal>
@@ -466,10 +469,10 @@ export function Landing() {
               <div className="lp-flow-line" />
               <div className="lp-flow-grid">
                 {[
-                  { n: "1", verb: "Assess", t: "needs_review", d: "Untrusted evidence and the policy citation are validated against the real order. AI proposes a split - it never decides money.", on: true },
-                  { n: "2", verb: "Approve", t: "ready_for_approval", d: "A named operator signs the frozen plan, bound to an exact fingerprint. Maker-checker, enforced server-side.", on: true },
-                  { n: "3", verb: "Execute", t: "processing", d: "Pre-flight re-fetch, fail-closed on drift, then Route reversals run to confirmed - idempotent and resumable.", on: true },
-                  { n: "4", verb: "Settle", t: "completed", d: "The buyer is refunded only after reversals confirm, then the whole plan reconciles against Razorpay.", on: true },
+                  { n: "1", verb: "Assess", t: "needs_review", d: "Precomputed returned-line and policy fixtures are treated as untrusted, validated against the seeded order, then passed to deterministic paise calculation.", on: true },
+                  { n: "2", verb: "Approve", t: "ready_for_approval", d: "A named operator approves the frozen plan, bound to an exact fingerprint. Separate maker-checker roles and RBAC remain production work.", on: true },
+                  { n: "3", verb: "Execute", t: "processing", d: "Pre-flight re-fetch fails closed on drift. Intent and a stable receipt are recorded so unknown Route outcomes pause for reconciliation, not a blind retry.", on: true },
+                  { n: "4", verb: "Settle", t: "completed", d: "The customer refund starts only after required reversals confirm; the simulator or configured Test Mode status is then recorded.", on: true },
                 ].map((s) => (
                   <div key={s.n} className={`lp-stage${s.on ? " on" : ""}`}>
                     <div className="lp-stage-node">{s.n}</div>
@@ -485,7 +488,7 @@ export function Landing() {
             <div className="lp-branch">
               <span><i className="d" style={{ background: "var(--lp-gold)" }} /> needs_review → evidence requested</span>
               <span><i className="d" style={{ background: "var(--lp-danger)" }} /> blocked → manual intervention</span>
-              <span><i className="d" style={{ background: "var(--lp-blue)" }} /> reversal_result_unknown → safe reconcile</span>
+              <span><i className="d" style={{ background: "var(--lp-blue)" }} /> reversal_result_unknown → receipt-based reconcile</span>
             </div>
           </Reveal>
         </div>
@@ -516,40 +519,40 @@ export function Landing() {
               </div>
               <div className="lp-cell lp-c-b">
                 <span className="lp-cell-idx">02</span>
-                <div className="lp-cell-t">{I.refresh}<h3>Shortfall recovery</h3></div>
-                <p>When a seller has already drained their float, the reversal can&rsquo;t pull it all back. ReturnSplit
-                  reverses what exists, opens an exception, and carries the residual - never a silent loss.</p>
+                <div className="lp-cell-t">{I.refresh}<h3>Shortfall handling</h3></div>
+                <p>When the reversible transfer balance is too low, the demo blocks approval, shows the residual, and
+                  can open an owned payments-reconciliation case instead of moving partial money.</p>
                 <div className="lp-cell-spacer" />
                 <div className="lp-block">
                   <div className="lp-block-h">
                     <span className="lp-mono">RET-260903-038 · Kabir Sen</span>
-                    <span className="lp-pill red">Blocked</span>
+                    <span className="lp-pill red">Approval blocked</span>
                   </div>
-                  <p>Needs ₹850.85 · only ₹49.15 reversible → manual intervention, residual carried.</p>
+                  <p>Needs ₹850.85 · only ₹49.15 reversible → approval blocked, reconciliation required.</p>
                 </div>
               </div>
               <div className="lp-cell lp-c-c">
                 <span className="lp-cell-idx">03</span>
-                <div className="lp-cell-t">{I.shield}<h3>Idempotent &amp; fail-closed</h3></div>
-                <p>A timed-out reversal is an unknown, never a blind retry. Fetch-and-match reconcile means no double
-                  clawback.</p>
+                <div className="lp-cell-t">{I.shield}<h3>Fail-closed retry safety</h3></div>
+                <p>A timed-out reversal becomes unknown, never a blind retry. The prototype fetches by stable receipt;
+                  durable cross-process protection remains production work.</p>
                 <div className="lp-cell-spacer" />
                 <span className="lp-tag">reversal_result_unknown → reconcile</span>
               </div>
               <div className="lp-cell lp-c-d">
                 <span className="lp-cell-idx">04</span>
-                <div className="lp-cell-t">{I.scroll}<h3>Tamper-evident trail</h3></div>
+                <div className="lp-cell-t">{I.scroll}<h3>Process-local audit history</h3></div>
                 <div className="lp-tl">
                   <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Plan frozen<small>Priyanshu · 08:57</small></span></div>
-                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Transfer reversed<small>trf_demo_Q8aavya</small></span></div>
-                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Buyer refunded<small>reconciled ✓</small></span></div>
+                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Demo transfer reversed<small>masked simulator reference</small></span></div>
+                  <div className="lp-tl-row"><span className="lp-tl-dot">{I.check}</span><span className="lp-tl-b">Demo refund completed<small>simulator status recorded</small></span></div>
                 </div>
               </div>
               <div className="lp-cell lp-c-e">
                 <span className="lp-cell-idx">05</span>
                 <div className="lp-cell-t">{I.trend}<h3>Exposure forecasting</h3></div>
-                <p>TimesFM 2.5 projects aggregate refund exposure for reserve planning - advisory only, not approved for
-                  production.</p>
+                <p>A dated TimesFM 2.5 backtest measured aggregate refund exposure on 56 synthetic daily totals. It is
+                  illustrative planning evidence, not production accuracy.</p>
                 <div className="lp-wape">
                   <div><b>3.77%</b><span>7-day WAPE</span></div>
                   <div><b>3.43%</b><span>14-day</span></div>
@@ -559,9 +562,9 @@ export function Landing() {
               <div className="lp-cell lp-c-f">
                 <div className="lp-cf-copy">
                   <span className="lp-cell-idx">06</span>
-                  <div className="lp-cell-t">{I.layers}<h3>Cross-rail by design</h3></div>
-                  <p>One reversal-and-reconciliation layer across Razorpay Route, Stripe Connect and Cashfree - the same
-                    balanced plan, whichever rail the money sits on.</p>
+                  <div className="lp-cell-t">{I.layers}<h3>Cross-rail roadmap</h3></div>
+                  <p>The prototype implements Razorpay Route simulation and an optional Test Mode adapter. Stripe Connect
+                    and Cashfree are roadmap research; no adapters are included.</p>
                 </div>
                 <span className="lp-tag">ON THE ROADMAP</span>
               </div>
@@ -577,8 +580,8 @@ export function Landing() {
             <div className="lp-section-head center">
               <span className="lp-eyebrow">Assurance</span>
               <h2>Boring where it counts. Provable where it matters.</h2>
-              <p>ReturnSplit reasons about the money and calls your Razorpay account to move it. It never holds or pools
-                funds - so it is an orchestration layer, not a payment aggregator. Here is the full control-set readout.</p>
+              <p>The prototype calculates the money plan without holding or pooling funds. Its default provider is a
+                deterministic simulator; an optional Razorpay Test Mode adapter is available, and live keys are rejected.</p>
             </div>
           </Reveal>
           <Reveal>
@@ -593,17 +596,17 @@ export function Landing() {
           <Reveal>
             <div className="lp-section-head">
               <span className="lp-eyebrow sq">For developers</span>
-              <h2>One call. The right transfers.</h2>
-              <p>Hand ReturnSplit the approved return and the order. It returns a frozen, balanced plan and - after
-                approval - executes the reversals and refund as one crash-safe saga.</p>
+              <h2>Plan first. Execute after approval.</h2>
+              <p>This conceptual API sketch shows the control boundary: calculate a frozen, balanced plan, bind a named
+                operator&rsquo;s approval, then enforce reversal-before-refund ordering. Demo state is process-local.</p>
               <div className="lp-hero-actions" style={{ justifyContent: "flex-start", marginTop: 24 }}>
-                <a className="lp-btn lp-btn-ghost" href="/claims">Explore the workbench {I.arrow}</a>
+                <Link className="lp-btn lp-btn-ghost" href="/claims">Explore the workbench {I.arrow}</Link>
               </div>
             </div>
           </Reveal>
           <Reveal>
             <div className="lp-code">
-              <div className="lp-code-bar"><i /><i /><i /><span>plan.ts</span></div>
+              <div className="lp-code-bar"><i /><i /><i /><span>conceptual-flow.ts</span></div>
               <pre><code>{CODE.map((line, i) => (
                 <span className="lp-cl" key={i}>
                   {line.length === 0 ? " " : line.map((tok, j) => (
@@ -622,7 +625,7 @@ export function Landing() {
           <div className="lp-faq-left">
             <span className="lp-eyebrow sq">FAQ</span>
             <h2>Questions? Answered.</h2>
-            <p>Still stuck? Mail <a href="mailto:hello@returnsplit.dev">hello@returnsplit.dev</a> and a human replies.</p>
+            <p>Still stuck? Contact the team at <a href="mailto:hello@returnsplit.dev">hello@returnsplit.dev</a>.</p>
           </div>
           <div className="lp-faq-list">
             {FAQS.map((f, i) => (
@@ -639,11 +642,11 @@ export function Landing() {
             <div className="lp-cta-card">
               <div className="lp-dots" />
               <h2>See exactly which transfer to reverse.</h2>
-              <p>Open the workbench and walk a real partial-refund claim end to end - the per-seller split, the
-                right reversals, human approval, and the reconciled trail.</p>
+              <p>Open the workbench and replay a seeded partial-refund scenario - the per-seller split, approval gate,
+                simulated execution, and process-local audit history.</p>
               <div className="lp-cta-actions">
-                <a className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</a>
-                <a className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">See a live claim</a>
+                <Link className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</Link>
+                <Link className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">View demo claim</Link>
               </div>
             </div>
           </Reveal>
@@ -656,30 +659,30 @@ export function Landing() {
           <div className="lp-footer-top">
             <div className="lp-footer-lead">
               <a className="lp-word lg" href="#top">Return<span className="s">Split</span></a>
-              <p>A financial control layer for safe, explainable marketplace return reversals on Razorpay Route.</p>
+              <p>A financial-control prototype for reviewable marketplace return reversals on Razorpay Route.</p>
             </div>
             <div className="lp-footer-col">
               <h5>Product</h5>
               <a href="#how">How it works</a>
               <a href="#features">Control</a>
               <a href="#assurance">Assurance</a>
-              <a href="/claims">Workbench</a>
+              <Link href="/claims">Workbench</Link>
             </div>
             <div className="lp-footer-col">
               <h5>Developers</h5>
-              <a href="#developers">API</a>
+              <a href="#developers">Control flow</a>
               <a href="https://razorpay.com/docs/payments/route/" target="_blank" rel="noreferrer">Route docs</a>
-              <a href="/evaluation">Evaluation</a>
+              <Link href="/evaluation">Evaluation</Link>
             </div>
             <div className="lp-footer-col">
               <h5>Company</h5>
-              <a href="/claims">Open workbench</a>
+              <Link href="/claims">Open workbench</Link>
               <a href="mailto:hello@returnsplit.dev">Get in touch</a>
               <a href="#faq">FAQ</a>
             </div>
           </div>
           <div className="lp-footer-note">
-            <span>ReturnSplit orchestrates refunds on your Razorpay account and never holds funds. Demo figures use a deterministic simulator; no live money moves.</span>
+            <span>Demo figures use a deterministic simulator; an optional Razorpay Test Mode adapter is available. Live keys are rejected, no live money moves, and ReturnSplit never holds funds.</span>
             <span>© 2026 ReturnSplit</span>
           </div>
         </div>
