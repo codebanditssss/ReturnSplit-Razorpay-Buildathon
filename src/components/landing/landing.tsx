@@ -118,12 +118,12 @@ const CODE: Tok[][] = [
   [{ t: "});" }],
   [],
   [{ t: "// balanced, integer paise - nothing has moved yet", c: "c" }],
-  [{ t: "plan." }, { t: "customerRefundPaise", c: "n" }, { t: ";     " }, { t: "// 232854", c: "c" }],
-  [{ t: "plan." }, { t: "reversals", c: "n" }, { t: ";               " }, { t: "// [{ account: 'acc_demo_aavya', paise: 197926 }]", c: "c" }],
+  [{ t: "plan." }, { t: "customerRefundPaise", c: "n" }, { t: ";  " }, { t: "// 232854", c: "c" }],
+  [{ t: "plan." }, { t: "reversals", c: "n" }, { t: ";  " }, { t: "// aavya reversal: 197926", c: "c" }],
   [{ t: "plan." }, { t: "marketplaceFundedPaise", c: "n" }, { t: ";  " }, { t: "// 34928", c: "c" }],
   [],
   [{ t: "await", c: "k" }, { t: " returnsplit." }, { t: "execute", c: "fn" }, { t: "(plan." }, { t: "id", c: "n" }, { t: ", {" }],
-  [{ t: "  approvedBy", c: "n" }, { t: ": operator,     " }, { t: "// maker-checker, bound to fingerprint", c: "c" }],
+  [{ t: "  approvedBy", c: "n" }, { t: ": operator,  " }, { t: "// maker-checker", c: "c" }],
   [{ t: "});" }],
 ];
 
@@ -355,7 +355,7 @@ export function Landing() {
           </p>
           <div className="lp-hero-actions">
             <a className="lp-btn lp-btn-primary lp-btn-lg" href="/claims">Open the workbench {I.arrow}</a>
-            <a className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims">See a live claim</a>
+            <a className="lp-btn lp-btn-ghost lp-btn-lg" href="/claims/RET-260903-031">See a live claim</a>
           </div>
           <div className="lp-hero-trust">
             <span>{I.check} Integer-paise, provably balanced</span>
