@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import type { ForecastHorizon, ForecastResponse, OpenRefundExposure } from "@/features/risk";
 import { assessRefundReserve } from "@/features/risk";
 import { Icon } from "./icons";
+import { ScoreGauge } from "./score-gauge";
 import { Card, Money, PageHeader, StatusPill } from "./ui";
 
 const chartWidth = 820;
@@ -102,6 +103,18 @@ export function RiskForecast({ initial, reservePaise, reserveSource, openExposur
         </Card>
 
         <div className="risk-side">
+          <Card title="Reserve coverage" description={`Available reserve against the open queue and ${horizon}-day stress plan.`}>
+            <ScoreGauge
+              ratio={summary.totalStressRequirementPaise > 0 ? summary.availableReservePaise / summary.totalStressRequirementPaise : 1}
+              valueText={`${Math.min(999, Math.round((summary.totalStressRequirementPaise > 0 ? summary.availableReservePaise / summary.totalStressRequirementPaise : 1) * 100))}%`}
+              grade={summary.status === "covered" ? "Covered" : "Top-up"}
+              tone={summary.status === "covered" ? "good" : "warning"}
+              label={`${horizon}-day coverage`}
+              caption={summary.status === "covered"
+                ? `${formatMoney(summary.headroomPaise)} headroom after the open queue and ${horizon}-day stress plan.`
+                : `${formatMoney(Math.abs(summary.headroomPaise))} short of covering the open queue and ${horizon}-day plan.`}
+            />
+          </Card>
           <Card title="Reserve decision" description="Current queue plus forecasted new refund demand.">
             <div className="risk-list">
               <RiskRow tone={summary.status === "covered" ? "good" : "warning"} title={summary.status === "covered" ? "Reserve covered" : "Top-up recommended"} detail={summary.status === "covered" ? `${formatMoney(summary.headroomPaise)} remains after the open queue and ${horizon}-day stress plan.` : `Add ${formatMoney(Math.abs(summary.headroomPaise))} to cover the open queue and planning range.`} />
