@@ -230,6 +230,25 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-marq-item .g { color: #d69a4a; }
 .lp-marq-sep { color: #37493f; margin: 0 26px; }
 
+/* ============ CROSSING RIBBONS ============ */
+.lp-ribbons { position: relative; overflow: hidden; padding: 66px 0; margin-top: 4px; isolation: isolate; }
+.lp-ribbon { position: relative; width: 118%; margin-left: -9%; overflow: hidden; padding: 13px 0;
+  border-block: 1px solid rgba(14,28,22,.14); }
+.lp-ribbon-a { transform: rotate(-2.6deg); background: var(--lp-green); z-index: 2;
+  box-shadow: 0 22px 50px -30px rgba(14,28,22,.6); }
+.lp-ribbon-b { transform: rotate(2.4deg); background: var(--lp-ink); margin-top: -14px; z-index: 1; border-color: rgba(0,0,0,.35); }
+.lp-ribbon-track { display: inline-flex; white-space: nowrap; will-change: transform; animation: lp-marq 40s linear infinite; }
+.lp-ribbon-track.rev { animation-direction: reverse; animation-duration: 46s; }
+.lp-ribbon-item { display: inline-flex; align-items: center; font-family: var(--lp-display-stack);
+  font-weight: 600; letter-spacing: -.01em; font-size: clamp(18px, 2.3vw, 27px); }
+.lp-ribbon-item > span { display: inline-flex; align-items: center; }
+.lp-ribbon-a .lp-ribbon-item { color: #eafaf3; }
+.lp-ribbon-b .lp-ribbon-item { color: #d7e4dd; }
+.lp-ribbon-star { margin: 0 22px; font-size: .62em; }
+.lp-ribbon-a .lp-ribbon-star { color: var(--lp-green-bright); }
+.lp-ribbon-b .lp-ribbon-star { color: #c98a3a; }
+@media (prefers-reduced-motion: reduce) { .lp-ribbon-track { animation: none; } }
+
 /* ============ SECTIONS ============ */
 .lp-section { padding: 96px 0; }
 .lp-section-head { max-width: 760px; }

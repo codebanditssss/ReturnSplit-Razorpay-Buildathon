@@ -106,6 +106,17 @@ const TICKER: React.ReactNode[] = [
   <>64 / 64 fixtures · 0 unsafe automations · ₹0 wrong-seller</>,
 ];
 
+const RIBBON: string[] = [
+  "Integer-paise math",
+  "Provably balanced",
+  "Never holds funds",
+  "Idempotent execution",
+  "Fail-closed by default",
+  "Human approval gate",
+  "Tamper-evident trail",
+  "Right transfer, every time",
+];
+
 /* ---------- hero product panel: faithful mini-workbench ---------- */
 function Workbench() {
   const { ref, seen } = useInView<HTMLDivElement>(0.3);
@@ -331,6 +342,32 @@ export function Landing() {
               ))}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* crossing ribbons */}
+      <div className="lp-ribbons" aria-hidden>
+        <div className="lp-ribbon lp-ribbon-a">
+          <div className="lp-ribbon-track">
+            {[0, 1, 2].map((dup) => (
+              <span className="lp-ribbon-item" key={dup}>
+                {RIBBON.map((t, i) => (
+                  <span key={i}>{t}<span className="lp-ribbon-star">✳</span></span>
+                ))}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="lp-ribbon lp-ribbon-b">
+          <div className="lp-ribbon-track rev">
+            {[0, 1, 2].map((dup) => (
+              <span className="lp-ribbon-item" key={dup}>
+                {RIBBON.map((t, i) => (
+                  <span key={i}>{t}<span className="lp-ribbon-star">✳</span></span>
+                ))}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
