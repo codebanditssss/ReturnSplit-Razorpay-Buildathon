@@ -380,7 +380,7 @@ export function ClaimWorkbench({
             <div className="timeline">
               {(isResolvedLocally || claim.status === "completed") && <TimelineEvent icon="circle-check" title="Customer refund confirmed" detail={`${receipt?.refundId ?? "Refund record"} · request ${receipt?.requestId ?? claim.execution?.requestId ?? "recorded"}`} time={timeOnly(receipt?.completedAt ?? claim.completedAt ?? claim.submittedAt)} />}
               {receipt?.reversals.map((reversal) => <TimelineEvent key={reversal.providerId} icon="check" title="Seller reversal confirmed" detail={`${reversal.providerId} · ${formatMoney(reversal.amountPaise)}`} time={timeOnly(receipt.completedAt)} />)}
-              {claim.approvedAt && <TimelineEvent icon="check" title="Plan approved" detail={`${claim.execution?.approvedBy ?? "Priyanshu"} · approval bound to plan hash`} time={timeOnly(claim.approvedAt)} />}
+              {claim.approvedAt && <TimelineEvent icon="check" title="Plan approved" detail={`${claim.execution?.approvedBy ?? "Khushi Diwan"} · approval bound to plan hash`} time={timeOnly(claim.approvedAt)} />}
               {[...reviewEvents]
                 .filter((event) => event.type !== "refund_created" || !(isResolvedLocally || claim.status === "completed"))
                 .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
