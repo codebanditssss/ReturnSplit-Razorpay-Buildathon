@@ -203,6 +203,8 @@ button { color: inherit; }
 .data-table tr:last-child td, .data-table tr:last-child th { border-bottom: 0; }
 .data-table tbody tr { transition: background .14s; }
 .data-table tbody tr:hover { background: #fafbf9; }
+.cust-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cust-identity-copy { min-width: 0; }
 .table-primary { display: block; color: var(--text); font-weight: 620; line-height: 1.35; }
 .table-secondary { display: block; margin-top: 3px; color: var(--text-tertiary); font-size: 12px; line-height: 1.35; }
 .operation-state { display: grid; justify-items: start; gap: 4px; }

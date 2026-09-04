@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { claimOperationPresentation, type ClaimOperationKind } from "@/lib/claim-operation-presentation";
 import type { ClaimExecutionSummary, ClaimStatus, ISODateTime, LiabilityParty, Paise } from "@/lib/types";
+import { Avatar } from "./avatar";
 import { Icon } from "./icons";
 import { Money, StatusPill } from "./ui";
 
@@ -106,7 +107,7 @@ export function ClaimsTable({ claims, providerLabel, asOf }: { claims: readonly 
               const operation = claimOperationPresentation(claim);
               return <tr key={claim.id}>
                 <th scope="row" className="claim-cell"><span className="table-primary">{claim.reference}</span><time className="table-secondary" dateTime={claim.submittedAt} title={`Age calculated as of ${formatDateTime(asOf)}`}>{formatAge(claim.submittedAt, asOf)} · {formatDate(claim.submittedAt)}</time></th>
-                <td className="customer-cell"><span className="table-primary">{claim.customerName}</span><span className="table-secondary">{claim.orderId}</span></td>
+                <td className="customer-cell"><div className="cust-identity"><Avatar name={claim.customerName} size={32} /><div className="cust-identity-copy"><span className="table-primary">{claim.customerName}</span><span className="table-secondary">{claim.orderId}</span></div></div></td>
                 <td className="item-cell"><span className="table-primary">{claim.itemSummary}</span><span className="table-secondary">{claim.reasonLabel}</span></td>
                 <td className="refund-cell" data-label="Refund">{typeof claim.amountPaise === "number" ? <Money paise={claim.amountPaise} /> : <span className="table-secondary">Pending review</span>}</td>
                 <td className="liability-cell" data-label="Funding">{liabilityLabel(claim.liability)}</td>
