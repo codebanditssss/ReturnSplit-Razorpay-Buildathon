@@ -16,6 +16,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // The CLI runner can drop `tsc --showConfig` output in detached CI shells.
+    // Use the stable compiler API so production builds remain reproducible.
+    useTypeScriptCli: false,
+  },
   async headers() {
     return [
       {

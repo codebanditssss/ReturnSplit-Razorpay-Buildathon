@@ -233,7 +233,7 @@ backtest or calibration exists.
 
 ### Optional — Show the recovery ledger
 
-Reset to **Liability decision**, front the refund from Mora Market, and complete
+Reset to **Liability decision**, front the refund from Creo Market, and complete
 the zero-reversal refund. The completed claim stays in the Open and Recovery
 queues because customer settlement and marketplace recovery are separate facts.
 On the claim, record a partial courier recovery, then allocate the remaining
