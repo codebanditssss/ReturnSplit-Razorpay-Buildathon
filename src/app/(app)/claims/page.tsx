@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClaimsTable, type ClaimRow } from "@/components/claims-table";
 import { Money, PageHeader } from "@/components/ui";
 import { Mascot } from "@/components/mascot";
+import { Icon } from "@/components/icons";
 import { SyncProviderButton } from "@/components/sync-provider-button";
 import { claimOperationPresentation } from "@/lib/claim-operation-presentation";
 import { getDemoClaimsView, getProviderIdentity } from "@/server/demo-runtime";
@@ -58,10 +59,10 @@ export default async function ClaimsPage() {
         <div className="welcome-mascot"><Mascot /></div>
       </section>
       <section className="metric-strip" aria-label="Queue overview">
-        <div className="metric"><span className="metric-label">Open claims</span><strong className="metric-value">{open.length}</strong><span className="metric-note">Across 4 return states</span></div>
-        <div className="metric"><span className="metric-label">Ready to approve</span><strong className="metric-value">{ready}</strong><span className="metric-note good">Calculation ready · balance check pending</span></div>
-        <div className="metric"><span className="metric-label">Needs attention</span><strong className="metric-value">{attention}</strong><span className="metric-note">Review, retry, or reconciliation</span></div>
-        <div className="metric"><span className="metric-label">Platform contribution</span><strong className="metric-value"><Money paise={exposure} /></strong><span className="metric-note">Across calculated open claims</span></div>
+        <div className="metric"><div className="metric-head"><span className="metric-label">Open claims</span><span className="metric-ico"><Icon name="inbox" /></span></div><strong className="metric-value">{open.length}</strong><span className="metric-note">Across 4 return states</span></div>
+        <div className="metric"><div className="metric-head"><span className="metric-label">Ready to approve</span><span className="metric-ico"><Icon name="circle-check" /></span></div><strong className="metric-value">{ready}</strong><span className="metric-note good">Calculation ready · balance check pending</span></div>
+        <div className="metric"><div className="metric-head"><span className="metric-label">Needs attention</span><span className="metric-ico"><Icon name="circle-alert" /></span></div><strong className="metric-value">{attention}</strong><span className="metric-note">Review, retry, or reconciliation</span></div>
+        <div className="metric"><div className="metric-head"><span className="metric-label">Platform contribution</span><span className="metric-ico"><Icon name="shield" /></span></div><strong className="metric-value"><Money paise={exposure} /></strong><span className="metric-note">Across calculated open claims</span></div>
       </section>
       <ClaimsTable claims={rows} providerLabel={provider.mode === "demo" ? "Simulation" : "Razorpay Test Mode"} asOf={asOf} />
     </div>
