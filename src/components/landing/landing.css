@@ -145,10 +145,10 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-hero h1 { font-family: var(--lp-display-stack); font-weight: 620; letter-spacing: -.045em; line-height: .93; font-size: clamp(40px, 6.6vw, 82px); margin: 24px auto 0; }
 .lp-hero h1 span { display: block; text-wrap: balance; }
 .lp-hero h1 em { position: relative; font-style: normal; color: var(--lp-ink); white-space: nowrap; }
-/* (de-slop) brush/highlighter replaced with a thin static single-weight underline */
+/* (de-slop) brush/highlighter replaced with a calm accent underline set below the baseline */
 .lp-hero h1 em::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -.04em; height: 2px;
-  background: var(--lp-green); border-radius: 2px;
+  content: ""; position: absolute; left: 2%; right: 2%; bottom: -.16em; height: .09em;
+  background: var(--lp-green); border-radius: 999px; opacity: .9;
 }
 .lp-hero .lp-hero-sub { max-width: 60ch; margin: 26px auto 0; font-size: clamp(16px, 1.7vw, 18.5px); color: var(--lp-text-2); line-height: 1.55; }
 .lp-hero-actions { display: flex; gap: 12px; justify-content: center; margin: 34px 0 0; flex-wrap: wrap; }
