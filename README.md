@@ -8,6 +8,8 @@ ReturnSplit is a financial-control workbench for that gap. It starts **after a r
 
 **Razorpay AI Buildathon 2026 submission · Track 04 — AI Finance Controller**
 
+[![ReturnSplit landing page showing the partial-refund control workbench](docs/screenshots/landing-overview.png)](https://returnsplit-razorpay-hackathon.vercel.app)
+
 ## Working workflow
 
 The default demo runs this complete loop with deterministic, process-local state:
