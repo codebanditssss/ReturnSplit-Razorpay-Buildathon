@@ -412,9 +412,22 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-footer-lead { max-width: 34ch; }
 .lp-footer-lead p { margin: 18px 0 0; font-size: 14px; color: var(--lp-text-2); line-height: 1.55; }
 .lp-footer-note { margin-top: 48px; padding: 22px 0; border-top: 1px solid var(--lp-line); display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: 12.5px; color: var(--lp-text-3); }
-.lp-ghost { position: relative; height: clamp(74px, 14vw, 190px); overflow: hidden; }
-.lp-ghost span { position: absolute; left: 50%; bottom: -.24em; transform: translateX(-50%); font-family: var(--lp-display-stack); font-weight: 700; letter-spacing: -.05em; font-size: clamp(80px, 20vw, 300px); line-height: 1; white-space: nowrap; color: #e7ebe4; }
-.lp-ghost span em { font-style: normal; color: #dfe6df; }
+.lp-ghost {
+  position: relative; margin-top: 44px; height: clamp(120px, 20vw, 250px); overflow: hidden;
+  border-radius: 26px 26px 0 0; background-color: #0f5a41;
+  background-image:
+    radial-gradient(85% 128% at 16% 128%, #2a8a66 0%, rgba(42,138,102,0) 62%),
+    radial-gradient(70% 120% at 84% 120%, #54cda2 0%, rgba(84,205,162,0) 58%),
+    radial-gradient(65% 140% at 55% 140%, rgba(230,184,119,.82) 0%, rgba(230,184,119,0) 46%),
+    linear-gradient(180deg, #0f5a41 0%, #0a3f2f 100%);
+}
+.lp-ghost::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+.lp-ghost span { position: absolute; left: 50%; bottom: -.22em; transform: translateX(-50%); font-family: var(--lp-display-stack); font-weight: 700; letter-spacing: -.05em; font-size: clamp(80px, 20vw, 300px); line-height: 1; white-space: nowrap; color: rgba(255,255,255,.94); }
+.lp-ghost span em { font-style: normal; color: rgba(255,255,255,.72); }
 
 /* ============ ANIMATIONS ============ */
 @keyframes lp-pulse { 0% { box-shadow: 0 0 0 0 rgba(23,98,71,.4); } 70% { box-shadow: 0 0 0 12px rgba(23,98,71,0); } 100% { box-shadow: 0 0 0 0 rgba(23,98,71,0); } }
