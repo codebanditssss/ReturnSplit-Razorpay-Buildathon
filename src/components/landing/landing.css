@@ -136,6 +136,7 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .lp-nav-links a:hover { color: var(--lp-text); }
 .lp-nav-cta { display: flex; align-items: center; gap: 10px; flex: none; }
 .lp-nav-cta .lp-btn { height: 42px; font-size: 13.5px; padding: 0 18px; transition: height .38s ease, font-size .38s ease, padding .38s ease, background .16s ease, transform .16s ease; }
+.lp-nav-label-short { display: none; }
 .lp-word { transition: font-size .38s cubic-bezier(.34,1.2,.5,1); }
 
 /* ============ HERO ============ */
@@ -522,6 +523,13 @@ html.lp-no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
   .lp-footer-status span:nth-child(4) { border-top: 1px solid var(--lp-line-2); }
 }
 @media (max-width: 560px) {
+  .lp-nav { padding: 0 12px; }
+  .lp-nav-shell { gap: 12px; height: 60px; padding: 0 4px 0 8px; }
+  .lp-nav-cta { gap: 0; }
+  .lp-nav-cta .lp-btn-ghost { display: none; }
+  .lp-nav-cta .lp-btn { height: 40px; padding: 0 15px; font-size: 13px; }
+  .lp-nav-label-long { display: none; }
+  .lp-nav-label-short { display: inline; }
   .lp-wrap { padding: 0 20px; }
   .lp-hero { padding: 88px 0 30px; }
   .lp-flow-grid { grid-template-columns: 1fr; }

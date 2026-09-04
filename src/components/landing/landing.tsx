@@ -308,7 +308,10 @@ export function Landing() {
           </div>
           <div className="lp-nav-cta">
             <Link className="lp-btn lp-btn-ghost" href="/claims/RET-260903-031">View demo claim</Link>
-            <Link className="lp-btn lp-btn-primary" href="/claims">Open the workbench</Link>
+            <Link className="lp-btn lp-btn-primary" href="/claims" aria-label="Open the workbench">
+              <span className="lp-nav-label-long">Open the workbench</span>
+              <span className="lp-nav-label-short" aria-hidden="true">Workbench</span>
+            </Link>
           </div>
         </div>
       </nav>
