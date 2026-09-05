@@ -119,17 +119,17 @@ const I = {
 const OPERATOR_SIGNALS = [
   {
     quote: "In multi-store orders, this feels inconsistent and harder to reconcile: reporting, refund logic, disputes, accounting clarity.",
-    source: "r/stripe · multi-store payments",
+    source: "multi-store payments",
     href: "https://www.reddit.com/r/stripe/comments/1qwuwbe/stripe_connect_fee_handling_destination_charges/",
   },
   {
     quote: "Whenever I refund a charge, the refund is actually getting taken from the business account instead of the connected account.",
-    source: "r/stripe · connected-account refunds",
+    source: "connected-account refunds",
     href: "https://www.reddit.com/r/stripe/comments/15gck8a/refund_payment_to_connected_account_taking/",
   },
   {
     quote: "With split payments, the application is liable for fees, chargebacks and refunds. I would like the vendor to be liable.",
-    source: "r/stripe · multi-vendor marketplace",
+    source: "multi-vendor marketplace",
     href: "https://www.reddit.com/r/stripe/comments/um37uu/can_i_use_stripe_connects_direct_charges_for/",
   },
 ];
@@ -277,12 +277,12 @@ export function Landing() {
                 <a className="lp-signal-card" href={signal.href} target="_blank" rel="noreferrer">
                   <div className="lp-reddit-head">
                     <Image src="/social/reddit.svg" alt="" width={21} height={21} unoptimized />
-                    <span><b>r/stripe</b><small>public operator discussion</small></span>
+                    <span><b>Public thread</b><small>payment operations</small></span>
                     <i aria-hidden />
                   </div>
                   <blockquote>{signal.quote}</blockquote>
                   <div className="lp-reddit-foot">
-                    <span className="lp-reddit-context">{signal.source.replace("r/stripe · ", "")}</span>
+                    <span className="lp-reddit-context">{signal.source}</span>
                     <span className="lp-signal-link">View on Reddit {I.arrow}</span>
                   </div>
                 </a>
